@@ -26,17 +26,19 @@
 package org.geysermc.geyser.entity.type;
 
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.type.IntEntityMetadata;
-import org.cloudburstmc.math.vector.Vector3f;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
-import org.cloudburstmc.protocol.bedrock.packet.PlaySoundPacket;
+import com.nukkitx.math.vector.Vector3f;
+import com.nukkitx.protocol.bedrock.data.entity.EntityData;
+import com.nukkitx.protocol.bedrock.data.entity.EntityFlag;
+import com.nukkitx.protocol.bedrock.packet.PlaySoundPacket;
 import lombok.Getter;
-import org.geysermc.erosion.util.BlockPositionIterator;
 import org.geysermc.geyser.entity.EntityDefinitions;
 import org.geysermc.geyser.entity.type.player.PlayerEntity;
-import org.geysermc.geyser.level.block.BlockStateValues;
-import org.geysermc.geyser.level.physics.BoundingBox;
 import org.geysermc.geyser.session.GeyserSession;
+import org.geysermc.geyser.level.physics.BoundingBox;
 import org.geysermc.geyser.translator.collision.BlockCollision;
+import org.geysermc.geyser.level.block.BlockStateValues;
+import org.geysermc.geyser.registry.BlockRegistries;
+import org.geysermc.geyser.level.block.BlockPositionIterator;
 import org.geysermc.geyser.util.BlockUtils;
 
 import java.util.UUID;
@@ -54,7 +56,7 @@ public class FishingHookEntity extends ThrowableEntity {
 
     private final BoundingBox boundingBox;
 
-    public FishingHookEntity(GeyserSession session, int entityId, long geyserId, UUID uuid, Vector3f position, Vector3f motion, float yaw, float pitch, float headYaw, PlayerEntity owner) {
+    public FishingHookEntity(GeyserSession session, int entityId, long geyserId, UUID uuid, Vector3f position, Vector3f motion, float yaw, float pitch, PlayerEntity owner) {
         super(session, entityId, geyserId, uuid, EntityDefinitions.FISHING_BOBBER, position, motion, yaw, pitch, 0f);
 
         this.boundingBox = new BoundingBox(0.125, 0.125, 0.125, 0.25, 0.25, 0.25);
@@ -65,7 +67,7 @@ public class FishingHookEntity extends ThrowableEntity {
         setBoundingBoxHeight(128);
 
         this.bedrockOwnerId = owner.getGeyserId();
-        this.dirtyMetadata.put(EntityDataTypes.OWNER_EID, this.bedrockOwnerId);
+        this.dirtyMetadata.put(EntityData.OWNER_EID, this.bedrockOwnerId);
     }
 
     public void setHookedEntity(IntEntityMetadata entityMetadata) {
@@ -73,7 +75,7 @@ public class FishingHookEntity extends ThrowableEntity {
         Entity entity = session.getEntityCache().getEntityByJavaId(hookedEntityId);
         if (entity != null) {
             bedrockTargetId = entity.getGeyserId();
-            dirtyMetadata.put(EntityDataTypes.TARGET_EID, bedrockTargetId);
+            dirtyMetadata.put(EntityData.TARGET_EID, bedrockTargetId);
             hooked = true;
         } else {
             hooked = false;
@@ -98,9 +100,19 @@ public class FishingHookEntity extends ThrowableEntity {
                 }
             }
 
-            double waterHeight = BlockStateValues.getWaterHeight(blockID);
-            if (waterHeight != -1 && position.getY() <= (iter.getY() + waterHeight)) {
-                touchingWater = true;
+            int waterLevel = BlockStateValues.getWaterLevel(blockID);
+            if (BlockRegistries.WATERLOGGED.get().contains(blockID)) {
+                waterLevel = 0;
+            }
+            if (waterLevel >= 0) {
+                double waterMaxY = iter.getY() + 1 - (waterLevel + 1) / 9.0;
+                // Falling water is a full block
+                if (waterLevel >= 8) {
+                    waterMaxY = iter.getY() + 1;
+                }
+                if (position.getY() <= waterMaxY) {
+                    touchingWater = true;
+                }
             }
         }
 
@@ -117,7 +129,7 @@ public class FishingHookEntity extends ThrowableEntity {
     }
 
     private void sendSplashSound(GeyserSession session) {
-        if (!silent) {
+        if (!getFlag(EntityFlag.SILENT)) {
             float volume = (float) (0.2f * Math.sqrt(0.2 * (motion.getX() * motion.getX() + motion.getZ() * motion.getZ()) + motion.getY() * motion.getY()));
             if (volume > 1) {
                 volume = 1;

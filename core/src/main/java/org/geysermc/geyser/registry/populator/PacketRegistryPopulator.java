@@ -26,7 +26,7 @@
 package org.geysermc.geyser.registry.populator;
 
 import com.github.steveice10.packetlib.packet.Packet;
-import org.cloudburstmc.protocol.bedrock.packet.BedrockPacket;
+import com.nukkitx.protocol.bedrock.BedrockPacket;
 import org.geysermc.geyser.GeyserImpl;
 import org.geysermc.geyser.registry.Registries;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
@@ -35,7 +35,6 @@ import org.geysermc.geyser.util.FileUtils;
 
 public class PacketRegistryPopulator {
 
-    @SuppressWarnings("unchecked")
     public static void populate() {
         for (Class<?> clazz : FileUtils.getGeneratedClassesForAnnotation(Translator.class)) {
             Class<?> packet = clazz.getAnnotation(Translator.class).packet();
@@ -45,18 +44,18 @@ public class PacketRegistryPopulator {
             try {
                 if (Packet.class.isAssignableFrom(packet)) {
                     Class<? extends Packet> targetPacket = (Class<? extends Packet>) packet;
-                    PacketTranslator<? extends Packet> translator = (PacketTranslator<? extends Packet>) clazz.getConstructor().newInstance();
+                    PacketTranslator<? extends Packet> translator = (PacketTranslator<? extends Packet>) clazz.newInstance();
 
                     Registries.JAVA_PACKET_TRANSLATORS.register(targetPacket, translator);
                 } else if (BedrockPacket.class.isAssignableFrom(packet)) {
                     Class<? extends BedrockPacket> targetPacket = (Class<? extends BedrockPacket>) packet;
-                    PacketTranslator<? extends BedrockPacket> translator = (PacketTranslator<? extends BedrockPacket>) clazz.getConstructor().newInstance();
+                    PacketTranslator<? extends BedrockPacket> translator = (PacketTranslator<? extends BedrockPacket>) clazz.newInstance();
 
                     Registries.BEDROCK_PACKET_TRANSLATORS.register(targetPacket, translator);
                 } else {
                     GeyserImpl.getInstance().getLogger().error("Class " + clazz.getCanonicalName() + " is annotated as a translator but has an invalid target packet.");
                 }
-            } catch (Exception e) {
+            } catch (InstantiationException | IllegalAccessException e) {
                 GeyserImpl.getInstance().getLogger().error("Could not instantiate annotated translator " + clazz.getCanonicalName());
             }
         }

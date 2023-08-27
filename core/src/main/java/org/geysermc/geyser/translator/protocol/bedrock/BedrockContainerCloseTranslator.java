@@ -26,7 +26,7 @@
 package org.geysermc.geyser.translator.protocol.bedrock;
 
 import com.github.steveice10.mc.protocol.packet.ingame.serverbound.inventory.ServerboundContainerClosePacket;
-import org.cloudburstmc.protocol.bedrock.packet.ContainerClosePacket;
+import com.nukkitx.protocol.bedrock.packet.ContainerClosePacket;
 import org.geysermc.geyser.inventory.Inventory;
 import org.geysermc.geyser.inventory.MerchantContainer;
 import org.geysermc.geyser.session.GeyserSession;
@@ -40,23 +40,23 @@ public class BedrockContainerCloseTranslator extends PacketTranslator<ContainerC
 
     @Override
     public void translate(GeyserSession session, ContainerClosePacket packet) {
-        byte bedrockId = packet.getId();
+        byte windowId = packet.getId();
 
         //Client wants close confirmation
         session.sendUpstreamPacket(packet);
         session.setClosingInventory(false);
 
-        if (bedrockId == -1 && session.getOpenInventory() instanceof MerchantContainer) {
+        if (windowId == -1 && session.getOpenInventory() instanceof MerchantContainer) {
             // 1.16.200 - window ID is always -1 sent from Bedrock
-            bedrockId = (byte) session.getOpenInventory().getBedrockId();
+            windowId = (byte) session.getOpenInventory().getId();
         }
 
         Inventory openInventory = session.getOpenInventory();
         if (openInventory != null) {
-            if (bedrockId == openInventory.getBedrockId()) {
-                ServerboundContainerClosePacket closeWindowPacket = new ServerboundContainerClosePacket(openInventory.getJavaId());
+            if (windowId == openInventory.getId()) {
+                ServerboundContainerClosePacket closeWindowPacket = new ServerboundContainerClosePacket(windowId);
                 session.sendDownstreamPacket(closeWindowPacket);
-                InventoryUtils.closeInventory(session, openInventory.getJavaId(), false);
+                InventoryUtils.closeInventory(session, windowId, false);
             } else if (openInventory.isPending()) {
                 InventoryUtils.displayInventory(session, openInventory);
                 openInventory.setPending(false);

@@ -28,8 +28,8 @@ package org.geysermc.geyser.platform.spigot;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
-import org.geysermc.geyser.dump.BootstrapDumpInfo;
 import org.geysermc.geyser.text.AsteriskSerializer;
+import org.geysermc.geyser.dump.BootstrapDumpInfo;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,8 +41,6 @@ public class GeyserSpigotDumpInfo extends BootstrapDumpInfo {
     private final String platformVersion;
     private final String platformAPIVersion;
     private final boolean onlineMode;
-
-    @AsteriskSerializer.Asterisk(isIp = true)
     private final String serverIP;
     private final int serverPort;
     private final List<PluginInfo> plugins;
@@ -53,7 +51,11 @@ public class GeyserSpigotDumpInfo extends BootstrapDumpInfo {
         this.platformVersion = Bukkit.getVersion();
         this.platformAPIVersion = Bukkit.getBukkitVersion();
         this.onlineMode = Bukkit.getOnlineMode();
-        this.serverIP = Bukkit.getIp();
+        if (AsteriskSerializer.showSensitive || (Bukkit.getIp().equals("") || Bukkit.getIp().equals("0.0.0.0"))) {
+            this.serverIP = Bukkit.getIp();
+        } else {
+            this.serverIP = "***";
+        }
         this.serverPort = Bukkit.getPort();
         this.plugins = new ArrayList<>();
 

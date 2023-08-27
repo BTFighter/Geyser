@@ -26,16 +26,16 @@
 package org.geysermc.geyser.entity.type.living.merchant;
 
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.EntityMetadata;
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.VillagerData;
+import com.nukkitx.math.vector.Vector3f;
+import com.nukkitx.math.vector.Vector3i;
+import com.nukkitx.protocol.bedrock.data.entity.EntityData;
+import com.nukkitx.protocol.bedrock.data.entity.EntityFlag;
+import com.nukkitx.protocol.bedrock.packet.MoveEntityAbsolutePacket;
 import lombok.Getter;
-import org.cloudburstmc.math.vector.Vector3f;
-import org.cloudburstmc.math.vector.Vector3i;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
-import org.cloudburstmc.protocol.bedrock.packet.MoveEntityAbsolutePacket;
 import org.geysermc.geyser.entity.EntityDefinition;
 import org.geysermc.geyser.registry.BlockRegistries;
-import org.geysermc.geyser.registry.type.BlockMapping;
 import org.geysermc.geyser.session.GeyserSession;
 
 import java.util.Optional;
@@ -94,16 +94,16 @@ public class VillagerEntity extends AbstractMerchantEntity {
         // Profession
         int profession = getBedrockProfession(villagerData.getProfession());
         canTradeWith = profession != 14 && profession != 0; // Not a notwit and not professionless
-        dirtyMetadata.put(EntityDataTypes.VARIANT, profession);
-        //metadata.put(EntityDataTypes.SKIN_ID, villagerData.getType()); Looks like this is modified but for any reason?
+        dirtyMetadata.put(EntityData.VARIANT, profession);
+        //metadata.put(EntityData.SKIN_ID, villagerData.getType()); Looks like this is modified but for any reason?
         // Region
-        dirtyMetadata.put(EntityDataTypes.MARK_VARIANT, getBedrockRegion(villagerData.getType()));
+        dirtyMetadata.put(EntityData.MARK_VARIANT, getBedrockRegion(villagerData.getType()));
         // Trade tier - different indexing in Bedrock
-        dirtyMetadata.put(EntityDataTypes.TRADE_TIER, villagerData.getLevel() - 1);
+        dirtyMetadata.put(EntityData.TRADE_TIER, villagerData.getLevel() - 1);
     }
 
     @Override
-    public Vector3i setBedPosition(EntityMetadata<Optional<Vector3i>, ?> entityMetadata) {
+    public Vector3i setBedPosition(EntityMetadata<Optional<Position>, ?> entityMetadata) {
         return bedPosition = super.setBedPosition(entityMetadata);
     }
 
@@ -118,7 +118,7 @@ public class VillagerEntity extends AbstractMerchantEntity {
         
         // The bed block
         int blockId = session.getGeyser().getWorldManager().getBlockAt(session, bedPosition);
-        String fullIdentifier = BlockRegistries.JAVA_BLOCKS.getOrDefault(blockId, BlockMapping.AIR).getJavaIdentifier();
+        String fullIdentifier = BlockRegistries.JAVA_IDENTIFIERS.get().get(blockId);
 
         // Set the correct position offset and rotation when sleeping
         int bedRotation = 0;

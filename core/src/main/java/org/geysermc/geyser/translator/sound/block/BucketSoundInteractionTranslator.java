@@ -25,9 +25,9 @@
 
 package org.geysermc.geyser.translator.sound.block;
 
-import org.cloudburstmc.math.vector.Vector3f;
-import org.cloudburstmc.protocol.bedrock.data.SoundEvent;
-import org.cloudburstmc.protocol.bedrock.packet.LevelSoundEventPacket;
+import com.nukkitx.math.vector.Vector3f;
+import com.nukkitx.protocol.bedrock.data.SoundEvent;
+import com.nukkitx.protocol.bedrock.packet.LevelSoundEventPacket;
 import org.geysermc.geyser.inventory.GeyserItemStack;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.sound.BlockSoundInteractionTranslator;
@@ -38,11 +38,11 @@ public class BucketSoundInteractionTranslator implements BlockSoundInteractionTr
 
     @Override
     public void translate(GeyserSession session, Vector3f position, String identifier) {
-        if (!session.isPlacedBucket()) {
+        if (session.getBucketScheduledFuture() == null) {
             return; // No bucket was really interacted with
         }
         GeyserItemStack itemStack = session.getPlayerInventory().getItemInHand();
-        String handItemIdentifier = itemStack.asItem().javaIdentifier();
+        String handItemIdentifier = itemStack.getMapping(session).getJavaIdentifier();
         if (!BlockSoundInteractionTranslator.canInteract(session, itemStack, identifier)) {
             return;
         }
@@ -71,7 +71,6 @@ public class BucketSoundInteractionTranslator implements BlockSoundInteractionTr
             case "minecraft:salmon_bucket":
             case "minecraft:pufferfish_bucket":
             case "minecraft:tropical_fish_bucket":
-            case "minecraft:tadpole_bucket":
                 soundEvent = SoundEvent.BUCKET_EMPTY_FISH;
                 break;
             case "minecraft:water_bucket":
@@ -84,7 +83,7 @@ public class BucketSoundInteractionTranslator implements BlockSoundInteractionTr
         if (soundEvent != null) {
             soundEventPacket.setSound(soundEvent);
             session.sendUpstreamPacket(soundEventPacket);
-            session.setPlacedBucket(false);
+            session.setBucketScheduledFuture(null);
         }
     }
 }

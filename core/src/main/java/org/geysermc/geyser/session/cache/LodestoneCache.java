@@ -73,7 +73,8 @@ public final class LodestoneCache {
             }
         }
 
-        for (LodestonePos pos : this.lodestones.values()) {
+        for (Int2ObjectMap.Entry<LodestonePos> entry : this.lodestones.int2ObjectEntrySet()) {
+            LodestonePos pos = entry.getValue();
             if (pos.equals(x, y, z, dim)) {
                 // Use this existing position instead
                 this.activeLodestones.put(itemStack, pos);

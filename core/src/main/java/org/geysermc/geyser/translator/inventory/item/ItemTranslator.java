@@ -25,63 +25,75 @@
 
 package org.geysermc.geyser.translator.inventory.item;
 
-import com.github.steveice10.mc.protocol.data.game.Identifier;
-import com.github.steveice10.mc.protocol.data.game.entity.attribute.ModifierOperation;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.ItemStack;
-import com.github.steveice10.opennbt.tag.builtin.ByteArrayTag;
-import com.github.steveice10.opennbt.tag.builtin.ByteTag;
-import com.github.steveice10.opennbt.tag.builtin.CompoundTag;
-import com.github.steveice10.opennbt.tag.builtin.DoubleTag;
-import com.github.steveice10.opennbt.tag.builtin.FloatTag;
-import com.github.steveice10.opennbt.tag.builtin.IntArrayTag;
-import com.github.steveice10.opennbt.tag.builtin.IntTag;
-import com.github.steveice10.opennbt.tag.builtin.ListTag;
-import com.github.steveice10.opennbt.tag.builtin.LongArrayTag;
-import com.github.steveice10.opennbt.tag.builtin.LongTag;
-import com.github.steveice10.opennbt.tag.builtin.ShortTag;
-import com.github.steveice10.opennbt.tag.builtin.StringTag;
-import com.github.steveice10.opennbt.tag.builtin.Tag;
+import com.github.steveice10.opennbt.tag.builtin.*;
+import com.nukkitx.nbt.NbtList;
+import com.nukkitx.nbt.NbtMap;
+import com.nukkitx.nbt.NbtMapBuilder;
+import com.nukkitx.nbt.NbtType;
+import com.nukkitx.protocol.bedrock.data.inventory.ItemData;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import org.cloudburstmc.protocol.bedrock.data.definitions.BlockDefinition;
-import org.geysermc.geyser.api.block.custom.CustomBlockData;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
-import org.cloudburstmc.nbt.NbtList;
-import org.cloudburstmc.nbt.NbtMap;
-import org.cloudburstmc.nbt.NbtMapBuilder;
-import org.cloudburstmc.nbt.NbtType;
-import org.cloudburstmc.protocol.bedrock.data.definitions.ItemDefinition;
-import org.cloudburstmc.protocol.bedrock.data.inventory.ItemData;
 import org.geysermc.geyser.GeyserImpl;
 import org.geysermc.geyser.inventory.GeyserItemStack;
-import org.geysermc.geyser.item.Items;
-import org.geysermc.geyser.item.type.Item;
 import org.geysermc.geyser.registry.BlockRegistries;
-import org.geysermc.geyser.registry.type.CustomSkull;
 import org.geysermc.geyser.registry.type.ItemMapping;
 import org.geysermc.geyser.registry.type.ItemMappings;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.geyser.skin.SkinManager;
-import org.geysermc.geyser.registry.Registries;
-import org.geysermc.geyser.text.ChatColor;
 import org.geysermc.geyser.text.MinecraftLocale;
 import org.geysermc.geyser.translator.text.MessageTranslator;
+import org.geysermc.geyser.util.FileUtils;
 
 import javax.annotation.Nonnull;
-import java.text.DecimalFormat;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import java.util.stream.Collectors;
 
-public final class ItemTranslator {
+public abstract class ItemTranslator {
+    private static final Int2ObjectMap<ItemTranslator> ITEM_STACK_TRANSLATORS = new Int2ObjectOpenHashMap<>();
+    private static final List<NbtItemStackTranslator> NBT_TRANSLATORS;
 
-    /**
-     * The order of these slots is their display order on Java Edition clients
-     */
-    private static final String[] ALL_SLOTS = new String[]{"mainhand", "offhand", "feet", "legs", "chest", "head"};
-    private static final DecimalFormat ATTRIBUTE_FORMAT = new DecimalFormat("0.#####");
-    private static final byte HIDE_ATTRIBUTES_FLAG = 1 << 1;
+    protected ItemTranslator() {
+    }
 
-    private ItemTranslator() {
+    public static void init() {
+        // no-op
+    }
+
+    static {
+        /* Load item translators */
+        Map<NbtItemStackTranslator, Integer> loadedNbtItemTranslators = new HashMap<>();
+        for (Class<?> clazz : FileUtils.getGeneratedClassesForAnnotation(ItemRemapper.class)) {
+            int priority = clazz.getAnnotation(ItemRemapper.class).priority();
+
+            GeyserImpl.getInstance().getLogger().debug("Found annotated item translator: " + clazz.getCanonicalName());
+
+            try {
+                if (NbtItemStackTranslator.class.isAssignableFrom(clazz)) {
+                    NbtItemStackTranslator nbtItemTranslator = (NbtItemStackTranslator) clazz.getDeclaredConstructor().newInstance();
+                    loadedNbtItemTranslators.put(nbtItemTranslator, priority);
+                    continue;
+                }
+                ItemTranslator itemStackTranslator = (ItemTranslator) clazz.getDeclaredConstructor().newInstance();
+                List<ItemMapping> appliedItems = itemStackTranslator.getAppliedItems();
+                for (ItemMapping item : appliedItems) {
+                    ItemTranslator registered = ITEM_STACK_TRANSLATORS.get(item.getJavaId());
+                    if (registered != null) {
+                        GeyserImpl.getInstance().getLogger().error("Could not instantiate annotated item translator " +
+                                clazz.getCanonicalName() + ". Item translator " + registered.getClass().getCanonicalName() +
+                                " is already registered for the item " + item.getJavaIdentifier());
+                        continue;
+                    }
+                    ITEM_STACK_TRANSLATORS.put(item.getJavaId(), itemStackTranslator);
+                }
+            } catch (InstantiationException | InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+                GeyserImpl.getInstance().getLogger().error("Could not instantiate annotated item translator " + clazz.getCanonicalName());
+            }
+        }
+
+        NBT_TRANSLATORS = loadedNbtItemTranslators.keySet().stream().sorted(Comparator.comparingInt(loadedNbtItemTranslators::get)).collect(Collectors.toList());
     }
 
     /**
@@ -93,29 +105,28 @@ public final class ItemTranslator {
             return new ItemStack(0);
         }
 
-        ItemMapping bedrockItem = mappings.getMapping(data);
-        Item javaItem = bedrockItem.getJavaItem();
+        ItemMapping javaItem = mappings.getMapping(data);
 
-        ItemStack itemStack = javaItem.translateToJava(data, bedrockItem, mappings);
+        ItemStack itemStack;
+        ItemTranslator itemStackTranslator = ITEM_STACK_TRANSLATORS.get(javaItem.getJavaId());
+        if (itemStackTranslator != null) {
+            itemStack = itemStackTranslator.translateToJava(data, javaItem, mappings);
+        } else {
+            itemStack = DEFAULT_TRANSLATOR.translateToJava(data, javaItem, mappings);
+        }
 
         if (itemStack != null && itemStack.getNbt() != null) {
-            javaItem.translateNbtToJava(itemStack.getNbt(), bedrockItem);
+            for (NbtItemStackTranslator translator : NBT_TRANSLATORS) {
+                if (translator.acceptItem(javaItem)) {
+                    translator.translateToJava(itemStack.getNbt(), javaItem);
+                }
+            }
             if (itemStack.getNbt().isEmpty()) {
-                // Otherwise, seems to cause issues with villagers accepting books, and I don't see how this will break anything else. - Camotoy
+                // Otherwise, seems to causes issues with villagers accepting books, and I don't see how this will break anything else. - Camotoy
                 itemStack = new ItemStack(itemStack.getId(), itemStack.getAmount(), null);
             }
         }
         return itemStack;
-    }
-
-    @Nonnull
-    public static ItemData.Builder translateToBedrock(GeyserSession session, int javaId, int count, CompoundTag tag) {
-        ItemMapping bedrockItem = session.getItemMappings().getMapping(javaId);
-        if (bedrockItem == ItemMapping.AIR) {
-            session.getGeyser().getLogger().debug("ItemMapping returned air: " + javaId);
-            return ItemData.builder();
-        }
-        return translateToBedrock(session, Registries.JAVA_ITEMS.get().get(javaId), bedrockItem, count, tag);
     }
 
     @Nonnull
@@ -125,189 +136,56 @@ public final class ItemTranslator {
         }
 
         ItemMapping bedrockItem = session.getItemMappings().getMapping(stack);
-        if (bedrockItem == ItemMapping.AIR) {
-            session.getGeyser().getLogger().debug("ItemMapping returned air: " + stack);
+        if (bedrockItem == null) {
+            session.getGeyser().getLogger().debug("No matching ItemMapping for " + stack);
             return ItemData.AIR;
         }
-        // Java item needs to be loaded separately. The mapping for tipped arrow would
-        return translateToBedrock(session, Registries.JAVA_ITEMS.get().get(stack.getId()), bedrockItem, stack.getAmount(), stack.getNbt())
-                .build();
-    }
 
-    @Nonnull
-    private static ItemData.Builder translateToBedrock(GeyserSession session, Item javaItem, ItemMapping bedrockItem, int count, CompoundTag tag) {
-        CompoundTag nbt = tag != null ? tag.clone() : null;
+        CompoundTag nbt = stack.getNbt() != null ? stack.getNbt().clone() : null;
+
+        // This is a fallback for maps with no nbt
+        if (nbt == null && bedrockItem.getJavaIdentifier().equals("minecraft:filled_map")) {
+            nbt = new CompoundTag("");
+            nbt.put(new IntTag("map", 0));
+        }
 
         if (nbt != null) {
-            javaItem.translateNbtToBedrock(session, nbt);
+            for (NbtItemStackTranslator translator : NBT_TRANSLATORS) {
+                if (translator.acceptItem(bedrockItem)) {
+                    translator.translateToBedrock(session, nbt, bedrockItem);
+                }
+            }
         }
 
         nbt = translateDisplayProperties(session, nbt, bedrockItem);
-
-        if (nbt != null) {
-            Tag hideFlags = nbt.get("HideFlags");
-            if (hideFlags == null || !hasFlagPresent(hideFlags, HIDE_ATTRIBUTES_FLAG)) {
-                // only add if the hide attribute modifiers flag is not present
-                addAttributeLore(nbt, session.locale());
-            }
-        }
-
         if (session.isAdvancedTooltips()) {
-            nbt = addAdvancedTooltips(nbt, javaItem, session.locale());
+            nbt = addAdvancedTooltips(nbt, bedrockItem, session.getLocale());
         }
 
-        ItemStack itemStack = new ItemStack(javaItem.javaId(), count, nbt);
+        ItemStack itemStack = new ItemStack(stack.getId(), stack.getAmount(), nbt);
 
-        ItemData.Builder builder = javaItem.translateToBedrock(itemStack, bedrockItem, session.getItemMappings());
+        ItemTranslator itemStackTranslator = ITEM_STACK_TRANSLATORS.getOrDefault(bedrockItem.getJavaId(), DEFAULT_TRANSLATOR);
+        ItemData.Builder builder = itemStackTranslator.translateToBedrock(itemStack, bedrockItem, session.getItemMappings());
         if (bedrockItem.isBlock()) {
-            CustomBlockData customBlockData = BlockRegistries.CUSTOM_BLOCK_ITEM_OVERRIDES.getOrDefault(
-                    bedrockItem.getJavaItem().javaIdentifier(), null);
-            if (customBlockData != null) {
-                translateCustomBlock(customBlockData, session, builder);
-            } else {
-                builder.blockDefinition(bedrockItem.getBedrockBlockDefinition());
-            }
+            builder.blockRuntimeId(bedrockItem.getBedrockBlockId());
         }
-
-        if (bedrockItem.getJavaItem().equals(Items.PLAYER_HEAD)) {
-            translatePlayerHead(session, nbt, builder);
-        }
-
-        translateCustomItem(nbt, builder, bedrockItem);
 
         if (nbt != null) {
             // Translate the canDestroy and canPlaceOn Java NBT
             ListTag canDestroy = nbt.get("CanDestroy");
+            String[] canBreak = new String[0];
             ListTag canPlaceOn = nbt.get("CanPlaceOn");
-            String[] canBreak = getCanModify(canDestroy);
-            String[] canPlace = getCanModify(canPlaceOn);
-            if (canBreak != null) {
-                builder.canBreak(canBreak);
-            }
-            if (canPlace != null) {
-                builder.canPlace(canPlace);
-            }
+            String[] canPlace = new String[0];
+            canBreak = getCanModify(canDestroy, canBreak);
+            canPlace = getCanModify(canPlaceOn, canPlace);
+            builder.canBreak(canBreak);
+            builder.canPlace(canPlace);
         }
 
-        return builder;
+        return builder.build();
     }
 
-    /**
-     * Bedrock Edition does not see attribute modifiers like Java Edition does,
-     * so we add them as lore instead.
-     *
-     * @param nbt the NBT of the ItemStack
-     * @param language the locale of the player
-     */
-    private static void addAttributeLore(CompoundTag nbt, String language) {
-        ListTag attributeModifiers = nbt.get("AttributeModifiers");
-        if (attributeModifiers == null) {
-            return; // nothing to convert to lore
-        }
-
-        CompoundTag displayTag = nbt.get("display");
-        if (displayTag == null) {
-            displayTag = new CompoundTag("display");
-        }
-        ListTag lore = displayTag.get("Lore");
-        if (lore == null) {
-            lore = new ListTag("Lore");
-        }
-
-        // maps each slot to the modifiers applied when in such slot
-        Map<String, List<StringTag>> slotsToModifiers = new HashMap<>();
-        for (Tag modifier : attributeModifiers) {
-            CompoundTag modifierTag = (CompoundTag) modifier;
-
-            // convert the modifier tag to a lore entry
-            String loreEntry = attributeToLore(modifierTag, language);
-            if (loreEntry == null) {
-                continue; // invalid or failed
-            }
-
-            StringTag loreTag = new StringTag("", loreEntry);
-            StringTag slotTag = modifierTag.get("Slot");
-            if (slotTag == null) {
-                // modifier applies to all slots implicitly
-                for (String slot : ALL_SLOTS) {
-                    slotsToModifiers.computeIfAbsent(slot, s -> new ArrayList<>()).add(loreTag);
-                }
-            } else {
-                // modifier applies to only the specified slot
-                slotsToModifiers.computeIfAbsent(slotTag.getValue(), s -> new ArrayList<>()).add(loreTag);
-            }
-        }
-
-        // iterate through the small array, not the map, so that ordering matches Java Edition
-        for (String slot : ALL_SLOTS) {
-            List<StringTag> modifiers = slotsToModifiers.get(slot);
-            if (modifiers == null || modifiers.isEmpty()) {
-                continue;
-            }
-
-            // Declare the slot, e.g. "When in Main Hand"
-            Component slotComponent = Component.text()
-                    .resetStyle()
-                    .color(NamedTextColor.GRAY)
-                    .append(Component.newline(), Component.translatable("item.modifiers." + slot))
-                    .build();
-            lore.add(new StringTag("", MessageTranslator.convertMessage(slotComponent, language)));
-
-            // Then list all the modifiers when used in this slot
-            for (StringTag modifier : modifiers) {
-                lore.add(modifier);
-            }
-        }
-
-        displayTag.put(lore);
-        nbt.put(displayTag);
-    }
-
-    @Nullable
-    private static String attributeToLore(CompoundTag modifier, String language) {
-        Tag amountTag = modifier.get("Amount");
-        if (amountTag == null || !(amountTag.getValue() instanceof Number number)) {
-            return null;
-        }
-        double amount = number.doubleValue();
-        if (amount == 0) {
-            return null;
-        }
-
-        if (!(modifier.get("AttributeName") instanceof StringTag nameTag)) {
-            return null;
-        }
-        String name = nameTag.getValue().replace("minecraft:", "");
-        // the namespace does not need to be present, but if it is, the java client ignores it
-
-        String operationTotal;
-        Tag operationTag = modifier.get("Operation");
-        ModifierOperation operation;
-        if (operationTag == null || (operation = ModifierOperation.from((int) operationTag.getValue())) == ModifierOperation.ADD) {
-            if (name.equals("generic.knockback_resistance")) {
-                amount *= 10;
-            }
-            operationTotal = ATTRIBUTE_FORMAT.format(amount);
-        } else if (operation == ModifierOperation.ADD_MULTIPLIED || operation == ModifierOperation.MULTIPLY) {
-            operationTotal = ATTRIBUTE_FORMAT.format(amount * 100) + "%";
-        } else {
-            GeyserImpl.getInstance().getLogger().warning("Unhandled ModifierOperation while adding item attributes: " + operation);
-            return null;
-        }
-        if (amount > 0) {
-            operationTotal = "+" + operationTotal;
-        }
-
-        Component attributeComponent = Component.text()
-                .resetStyle()
-                .color(amount > 0 ? NamedTextColor.BLUE : NamedTextColor.RED)
-                .append(Component.text(operationTotal + " "), Component.translatable("attribute.name." + name))
-                .build();
-
-        return MessageTranslator.convertMessage(attributeComponent, language);
-    }
-
-    private static CompoundTag addAdvancedTooltips(CompoundTag nbt, Item item, String language) {
+    private static CompoundTag addAdvancedTooltips(CompoundTag nbt, ItemMapping mapping, String language) {
         CompoundTag newNbt = nbt;
         if (newNbt == null) {
             newNbt = new CompoundTag("nbt");
@@ -324,7 +202,7 @@ public final class ItemTranslator {
         if (listTag == null) {
             listTag = new ListTag("Lore");
         }
-        int maxDurability = item.maxDamage();
+        int maxDurability = mapping.getMaxDamage();
 
         if (maxDurability != 0) {
             Tag durabilityTag = newNbt.get("Damage");
@@ -343,7 +221,7 @@ public final class ItemTranslator {
             }
         }
 
-        listTag.add(new StringTag("", ChatColor.RESET + ChatColor.DARK_GRAY + item.javaIdentifier()));
+        listTag.add(new StringTag("", "§r§8" + mapping.getJavaIdentifier()));
         if (nbt != null) {
             Component component = Component.text()
                     .resetStyle()
@@ -363,78 +241,138 @@ public final class ItemTranslator {
      * In Java, this is treated as normal NBT, but in Bedrock, these arguments are extra parts of the item data itself.
      *
      * @param canModifyJava the list of items in Java
+     * @param canModifyBedrock the empty list of items in Bedrock
      * @return the new list of items in Bedrock
      */
-    private static String[] getCanModify(ListTag canModifyJava) {
+    private static String[] getCanModify(ListTag canModifyJava, String[] canModifyBedrock) {
         if (canModifyJava != null && canModifyJava.size() > 0) {
-            String[] canModifyBedrock = new String[canModifyJava.size()];
+            canModifyBedrock = new String[canModifyJava.size()];
             for (int i = 0; i < canModifyBedrock.length; i++) {
                 // Get the Java identifier of the block that can be placed
-                String block = Identifier.formalize(((StringTag) canModifyJava.get(i)).getValue());
+                String block = ((StringTag) canModifyJava.get(i)).getValue();
+                // Sometimes this is done but it's still valid
+                if (!block.startsWith("minecraft:")) block = "minecraft:" + block;
                 // Get the Bedrock identifier of the item and replace it.
                 // This will unfortunately be limited - for example, beds and banners will be translated weirdly
                 canModifyBedrock[i] = BlockRegistries.JAVA_TO_BEDROCK_IDENTIFIERS.getOrDefault(block, block).replace("minecraft:", "");
             }
-            return canModifyBedrock;
         }
-        return null;
+        return canModifyBedrock;
     }
 
     /**
-     * Given an item stack, determine the Bedrock item definition that should be applied to Bedrock players.
+     * Given an item stack, determine the item mapping that should be applied to Bedrock players.
      */
-    @NonNull
-    public static ItemDefinition getBedrockItemDefinition(GeyserSession session, @Nonnull GeyserItemStack itemStack) {
+    @Nonnull
+    public static ItemMapping getBedrockItemMapping(GeyserSession session, @Nonnull GeyserItemStack itemStack) {
         if (itemStack.isEmpty()) {
-            return ItemDefinition.AIR;
+            return ItemMapping.AIR;
         }
-
-        ItemMapping mapping = itemStack.asItem().toBedrockDefinition(itemStack.getNbt(), session.getItemMappings());
-
-        ItemDefinition itemDefinition = mapping.getBedrockDefinition();
-        CustomBlockData customBlockData = BlockRegistries.CUSTOM_BLOCK_ITEM_OVERRIDES.getOrDefault(
-                mapping.getJavaItem().javaIdentifier(), null);
-        if (customBlockData != null) {
-            itemDefinition = session.getItemMappings().getCustomBlockItemDefinitions().get(customBlockData);
-        }
-
-        if (mapping.getJavaItem().equals(Items.PLAYER_HEAD)) {
-            CustomSkull customSkull = getCustomSkull(session, itemStack.getNbt());
-            if (customSkull != null) {
-                itemDefinition = session.getItemMappings().getCustomBlockItemDefinitions().get(customSkull.getCustomBlockData());
-            }
-        }
-
-        ItemDefinition definition = CustomItemTranslator.getCustomItem(itemStack.getNbt(), mapping);
-        if (definition == null) {
-            // No custom item
-            return itemDefinition;
-        } else {
-            return definition;
-        }
+        int javaId = itemStack.getJavaId();
+        return ITEM_STACK_TRANSLATORS.getOrDefault(javaId, DEFAULT_TRANSLATOR)
+                .getItemMapping(javaId, itemStack.getNbt(), session.getItemMappings());
     }
 
-    public static NbtMap translateNbtToBedrock(CompoundTag tag) {
-        if (!tag.getValue().isEmpty()) {
-            NbtMapBuilder builder = NbtMap.builder();
-            for (Tag javaTag : tag.values()) {
+    private static final ItemTranslator DEFAULT_TRANSLATOR = new ItemTranslator() {
+        @Override
+        public List<ItemMapping> getAppliedItems() {
+            return null;
+        }
+    };
+
+    protected ItemData.Builder translateToBedrock(ItemStack itemStack, ItemMapping mapping, ItemMappings mappings) {
+        if (itemStack == null) {
+            // Return, essentially, air
+            return ItemData.builder();
+        }
+        ItemData.Builder builder = ItemData.builder()
+                .id(mapping.getBedrockId())
+                .damage(mapping.getBedrockData())
+                .count(itemStack.getAmount());
+        if (itemStack.getNbt() != null) {
+            builder.tag(this.translateNbtToBedrock(itemStack.getNbt()));
+        }
+        return builder;
+    }
+
+    public ItemStack translateToJava(ItemData itemData, ItemMapping mapping, ItemMappings mappings) {
+        if (itemData == null) return null;
+        if (itemData.getTag() == null) {
+            return new ItemStack(mapping.getJavaId(), itemData.getCount(), new CompoundTag(""));
+        }
+        return new ItemStack(mapping.getJavaId(), itemData.getCount(), this.translateToJavaNBT("", itemData.getTag()));
+    }
+
+    /**
+     * Used for initialization only and only called once.
+     */
+    public abstract List<ItemMapping> getAppliedItems();
+
+    protected ItemMapping getItemMapping(int javaId, CompoundTag nbt, ItemMappings mappings) {
+        return mappings.getMapping(javaId);
+    }
+
+    protected NbtMap translateNbtToBedrock(CompoundTag tag) {
+        NbtMapBuilder builder = NbtMap.builder();
+        if (tag.getValue() != null && !tag.getValue().isEmpty()) {
+            for (String str : tag.getValue().keySet()) {
+                Tag javaTag = tag.get(str);
                 Object translatedTag = translateToBedrockNBT(javaTag);
                 if (translatedTag == null)
                     continue;
 
                 builder.put(javaTag.getName(), translatedTag);
             }
-            return builder.build();
         }
-        return NbtMap.EMPTY;
+        return builder.build();
     }
 
-    private static Object translateToBedrockNBT(Tag tag) {
-        if (tag instanceof CompoundTag compoundTag) {
-            return translateNbtToBedrock(compoundTag);
+    private Object translateToBedrockNBT(Tag tag) {
+        if (tag instanceof ByteArrayTag) {
+            return ((ByteArrayTag) tag).getValue();
+        }
+
+        if (tag instanceof ByteTag) {
+            return ((ByteTag) tag).getValue();
+        }
+
+        if (tag instanceof DoubleTag) {
+            return ((DoubleTag) tag).getValue();
+        }
+
+        if (tag instanceof FloatTag) {
+            return ((FloatTag) tag).getValue();
+        }
+
+        if (tag instanceof IntArrayTag) {
+            return ((IntArrayTag) tag).getValue();
+        }
+
+        if (tag instanceof IntTag) {
+            return ((IntTag) tag).getValue();
+        }
+
+        if (tag instanceof LongArrayTag) {
+            //Long array tag does not exist in BE
+            //LongArrayTag longArrayTag = (LongArrayTag) tag;
+            //return new com.nukkitx.nbt.tag.LongArrayTag(longArrayTag.getName(), longArrayTag.getValue());
+            return null;
+        }
+
+        if (tag instanceof LongTag) {
+            return ((LongTag) tag).getValue();
+        }
+
+        if (tag instanceof ShortTag) {
+            return ((ShortTag) tag).getValue();
+        }
+
+        if (tag instanceof StringTag) {
+            return ((StringTag) tag).getValue();
         }
 
         if (tag instanceof ListTag listTag) {
+
             List<Object> tagList = new ArrayList<>();
             for (Tag value : listTag) {
                 tagList.add(translateToBedrockNBT(value));
@@ -446,17 +384,14 @@ public final class ItemTranslator {
             return new NbtList(type, tagList);
         }
 
-        if (tag instanceof LongArrayTag) {
-            //Long array tag does not exist in BE
-            //LongArrayTag longArrayTag = (LongArrayTag) tag;
-            //return new org.cloudburstmc.nbt.tag.LongArrayTag(longArrayTag.getName(), longArrayTag.getValue());
-            return null;
+        if (tag instanceof CompoundTag compoundTag) {
+            return translateNbtToBedrock(compoundTag);
         }
 
-        return tag.getValue();
+        return null;
     }
 
-    public static CompoundTag translateToJavaNBT(String name, NbtMap tag) {
+    private CompoundTag translateToJavaNBT(String name, NbtMap tag) {
         CompoundTag javaTag = new CompoundTag(name);
         Map<String, Tag> javaValue = javaTag.getValue();
         if (tag != null && !tag.isEmpty()) {
@@ -473,7 +408,7 @@ public final class ItemTranslator {
         return javaTag;
     }
 
-    private static Tag translateToJavaNBT(String name, Object object) {
+    private Tag translateToJavaNBT(String name, Object object) {
         if (object instanceof int[]) {
             return new IntArrayTag(name, (int[]) object);
         }
@@ -481,7 +416,7 @@ public final class ItemTranslator {
         if (object instanceof byte[]) {
             return new ByteArrayTag(name, (byte[]) object);
         }
-
+        
         if (object instanceof Byte) {
             return new ByteTag(name, (byte) object);
         }
@@ -555,7 +490,7 @@ public final class ItemTranslator {
                 String name = tagName.getValue();
 
                 // Get the translated name and prefix it with a reset char
-                name = MessageTranslator.convertMessageLenient(name, session.locale());
+                name = MessageTranslator.convertMessageLenient(name, session.getLocale());
 
                 // Add the new name tag
                 display.put(new StringTag("Name", name));
@@ -583,73 +518,55 @@ public final class ItemTranslator {
 
             String translationKey = mapping.getTranslationString();
             // Reset formatting since Bedrock defaults to italics
-            display.put(new StringTag("Name", ChatColor.RESET + ChatColor.ESCAPE + translationColor + MinecraftLocale.getLocaleString(translationKey, session.locale())));
+            display.put(new StringTag("Name", "§r§" + translationColor + MinecraftLocale.getLocaleString(translationKey, session.getLocale())));
         }
 
         return tag;
     }
 
     /**
-     * Translates the custom model data of an item
-     */
-    public static void translateCustomItem(CompoundTag nbt, ItemData.Builder builder, ItemMapping mapping) {
-        ItemDefinition definition = CustomItemTranslator.getCustomItem(nbt, mapping);
-        if (definition != null) {
-            builder.definition(definition);
-            builder.blockDefinition(null);
-        }
-    }
-
-    /**
-     * Translates a custom block override
-     */
-    private static void translateCustomBlock(CustomBlockData customBlockData, GeyserSession session, ItemData.Builder builder) {
-        ItemDefinition itemDefinition = session.getItemMappings().getCustomBlockItemDefinitions().get(customBlockData);
-        BlockDefinition blockDefinition = session.getBlockMappings().getCustomBlockStateDefinitions().get(customBlockData.defaultBlockState());
-        builder.definition(itemDefinition);
-        builder.blockDefinition(blockDefinition);
-    }
-
-    private static CustomSkull getCustomSkull(GeyserSession session, CompoundTag nbt) {
-        if (nbt != null && nbt.contains("SkullOwner")) {
-            if (!(nbt.get("SkullOwner") instanceof CompoundTag skullOwner)) {
-                // It's a username give up d:
-                return null;
-            }
-            SkinManager.GameProfileData data = SkinManager.GameProfileData.from(skullOwner);
-            if (data == null) {
-                session.getGeyser().getLogger().debug("Not sure how to handle skull head item display. " + nbt);
-                return null;
-            }
-
-            String skinHash = data.skinUrl().substring(data.skinUrl().lastIndexOf('/') + 1);
-            return BlockRegistries.CUSTOM_SKULLS.get(skinHash);
-        }
-        return null;
-    }
-
-    private static void translatePlayerHead(GeyserSession session, CompoundTag nbt, ItemData.Builder builder) {
-        CustomSkull customSkull = getCustomSkull(session, nbt);
-        if (customSkull != null) {
-            CustomBlockData customBlockData = customSkull.getCustomBlockData();
-            ItemDefinition itemDefinition = session.getItemMappings().getCustomBlockItemDefinitions().get(customBlockData);
-            BlockDefinition blockDefinition = session.getBlockMappings().getCustomBlockStateDefinitions().get(customBlockData.defaultBlockState());
-            builder.definition(itemDefinition);
-            builder.blockDefinition(blockDefinition);
-        }
-    }
-
-    /**
-     * Checks if the NBT of a Java item stack has the given hide flag.
+     * Checks if an {@link ItemStack} is equal to another item stack
      *
-     * @param hideFlags the "HideFlags", which may not be null
-     * @param flagMask the flag to check for, as a bit mask
-     * @return true if the flag is present, false if not or if the tag value is not a number
+     * @param itemStack the item stack to check
+     * @param equalsItemStack the item stack to check if equal to
+     * @param checkAmount if the amount should be taken into account
+     * @param trueIfAmountIsGreater if this should return true if the amount of the
+     *                              first item stack is greater than that of the second
+     * @param checkNbt if NBT data should be checked
+     * @return if an item stack is equal to another item stack
      */
-    private static boolean hasFlagPresent(Tag hideFlags, byte flagMask) {
-        if (hideFlags.getValue() instanceof Number flags) {
-            return (flags.byteValue() & flagMask) == flagMask;
+    public boolean equals(ItemStack itemStack, ItemStack equalsItemStack, boolean checkAmount, boolean trueIfAmountIsGreater, boolean checkNbt) {
+        if (itemStack.getId() != equalsItemStack.getId()) {
+            return false;
         }
-        return false;
+        if (checkAmount) {
+            if (trueIfAmountIsGreater) {
+                if (itemStack.getAmount() < equalsItemStack.getAmount()) {
+                    return false;
+                }
+            } else {
+                if (itemStack.getAmount() != equalsItemStack.getAmount()) {
+                    return false;
+                }
+            }
+        }
+
+        if (!checkNbt) {
+            return true;
+        }
+        if ((itemStack.getNbt() == null || itemStack.getNbt().isEmpty()) && (equalsItemStack.getNbt() != null && !equalsItemStack.getNbt().isEmpty())) {
+            return false;
+        }
+
+        if ((itemStack.getNbt() != null && !itemStack.getNbt().isEmpty() && (equalsItemStack.getNbt() == null || !equalsItemStack.getNbt().isEmpty()))) {
+            return false;
+        }
+
+        if (itemStack.getNbt() != null && equalsItemStack.getNbt() != null) {
+            return itemStack.getNbt().equals(equalsItemStack.getNbt());
+        }
+
+        return true;
     }
+
 }

@@ -4,13 +4,13 @@
 # A bridge between Minecraft: Bedrock Edition and Minecraft: Java Edition.
 #
 # GitHub: https://github.com/GeyserMC/Geyser
-# Discord: https://discord.gg/geysermc
+# Discord: https://discord.geysermc.org/
 # --------------------------------
 
 bedrock:
   # The IP address that will listen for connections.
-  # Generally, you should only uncomment and change this if you want to limit what IPs can connect to your server.
-  #address: 0.0.0.0
+  # There is no reason to change this unless you want to limit what IPs can connect to your server.
+  address: 0.0.0.0
   # The port that will listen for connections
   port: 19132
   # Some hosting services change your Java port everytime you start the server and require the same port to be used for Bedrock.
@@ -71,7 +71,7 @@ floodgate-key-file: key.pem
 # This saves a token that can be reused to authenticate the player later. This does not save emails or passwords,
 # but you should still be cautious when adding to this list and giving others access to this Geyser instance's files.
 # Removing a name from this list will delete its cached login information on the next Geyser startup.
-# The file that tokens will be saved in is in the same folder as this config, named "saved-refresh-tokens.json".
+# The file for this is in the same folder as this config, named "saved-refresh-tokens.json".
 saved-user-logins:
   - ThisExampleUsernameShouldBeLongEnoughToNeverBeAnXboxUsername
   - ThisOtherExampleUsernameShouldAlsoBeLongEnough
@@ -111,17 +111,14 @@ debug-mode: false
 
 # Allow third party capes to be visible. Currently allowing:
 # OptiFine capes, LabyMod capes, 5Zig capes and MinecraftCapes
-allow-third-party-capes: false
+allow-third-party-capes: true
 
 # Allow third party deadmau5 ears to be visible. Currently allowing:
 # MinecraftCapes
 allow-third-party-ears: false
 
-# Allow a fake cooldown indicator to be sent. Bedrock players otherwise do not see a cooldown as they still use 1.8 combat.
-# Please note: if the cooldown is enabled, some users may see a black box during the cooldown sequence, like below:
-# https://cdn.discordapp.com/attachments/613170125696270357/957075682230419466/Screenshot_from_2022-03-25_20-35-08.png
-# This can be disabled by going into Bedrock settings under the accessibility tab and setting "Text Background Opacity" to 0
-# This setting can be set to "title", "actionbar" or "false"
+# Allow a fake cooldown indicator to be sent. Bedrock players do not see a cooldown as they still use 1.8 combat
+# Can be title, actionbar or false
 show-cooldown: title
 
 # Controls if coordinates are shown to players.
@@ -129,6 +126,10 @@ show-coordinates: true
 
 # Whether Bedrock players are blocked from performing their scaffolding-style bridging.
 disable-bedrock-scaffolding: false
+
+# Whether Bedrock players can right-click outside of their inventory to replace armor in their inventory, even if the
+# armor slot is already occupied (which Java Edition doesn't allow)
+always-quick-change-armor: false
 
 # If set, when a Bedrock player performs any emote, it will swap the offhand and mainhand items, just like the Java Edition keybind
 # There are three options this can be set to:
@@ -154,10 +155,9 @@ max-visible-custom-skulls: 128
 # The radius in blocks around the player in which custom skulls are displayed.
 custom-skull-render-distance: 32
 
-# Whether to add any items and blocks which normally does not exist in Bedrock Edition.
+# Whether to add (at this time, only) the furnace minecart as a separate item in the game, which normally does not exist in Bedrock Edition.
 # This should only need to be disabled if using a proxy that does not use the "transfer packet" style of server switching.
 # If this is disabled, furnace minecart items will be mapped to hopper minecart items.
-# Geyser's block, item, and skull mappings systems will also be disabled.
 # This option requires a restart of Geyser in order to change its setting.
 add-non-bedrock-items: true
 
@@ -174,18 +174,6 @@ force-resource-packs: true
 # Allows Xbox achievements to be unlocked.
 # THIS DISABLES ALL COMMANDS FROM SUCCESSFULLY RUNNING FOR BEDROCK IN-GAME, as otherwise Bedrock thinks you are cheating.
 xbox-achievements-enabled: false
-
-# Whether player IP addresses will be logged by the server.
-log-player-ip-addresses: true
-
-# Whether to alert the console and operators that a new Geyser version is available that supports a Bedrock version
-# that this Geyser version does not support. It's recommended to keep this option enabled, as many Bedrock platforms
-# auto-update.
-notify-on-new-bedrock-update: true
-
-# Which item to use to mark unavailable slots in a Bedrock player inventory. Examples of this are the 2x2 crafting grid while in creative,
-# or custom inventory menus with sizes different from the usual 3x9. A barrier block is the default item.
-unusable-space-block: minecraft:barrier
 
 # bStats is a stat tracker that is entirely anonymous and tracks only basic information
 # about Geyser, such as how many people are online, how many servers are using Geyser,
@@ -218,10 +206,5 @@ mtu: 1400
 # If enabled on plugin versions, the remote address and port sections are ignored
 # If disabled on plugin versions, expect performance decrease and latency increase
 use-direct-connection: true
-
-# Whether Geyser should attempt to disable compression for Bedrock players. This should be a benefit as there is no need to compress data
-# when Java packets aren't being handled over the network.
-# This requires use-direct-connection to be true.
-disable-compression: true
 
 config-version: 4

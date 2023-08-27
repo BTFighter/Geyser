@@ -30,18 +30,17 @@ import com.github.steveice10.mc.protocol.packet.ingame.serverbound.inventory.Ser
 import com.github.steveice10.mc.protocol.packet.ingame.serverbound.inventory.ServerboundContainerClosePacket;
 import com.github.steveice10.opennbt.tag.builtin.CompoundTag;
 import com.github.steveice10.opennbt.tag.builtin.ListTag;
-import org.cloudburstmc.math.vector.Vector3i;
-import org.cloudburstmc.nbt.NbtMap;
-import org.cloudburstmc.nbt.NbtMapBuilder;
-import org.cloudburstmc.nbt.NbtType;
-import org.cloudburstmc.protocol.bedrock.data.inventory.ItemData;
-import org.geysermc.erosion.util.LecternUtils;
+import com.nukkitx.math.vector.Vector3i;
+import com.nukkitx.nbt.NbtMap;
+import com.nukkitx.nbt.NbtMapBuilder;
+import com.nukkitx.nbt.NbtType;
+import com.nukkitx.protocol.bedrock.data.inventory.ItemData;
 import org.geysermc.geyser.inventory.GeyserItemStack;
 import org.geysermc.geyser.inventory.Inventory;
 import org.geysermc.geyser.inventory.LecternContainer;
 import org.geysermc.geyser.inventory.PlayerInventory;
-import org.geysermc.geyser.inventory.updater.InventoryUpdater;
 import org.geysermc.geyser.session.GeyserSession;
+import org.geysermc.geyser.inventory.updater.InventoryUpdater;
 import org.geysermc.geyser.util.BlockEntityUtils;
 import org.geysermc.geyser.util.InventoryUtils;
 
@@ -56,8 +55,7 @@ public class LecternInventoryTranslator extends BaseInventoryTranslator {
     }
 
     @Override
-    public boolean prepareInventory(GeyserSession session, Inventory inventory) {
-        return true;
+    public void prepareInventory(GeyserSession session, Inventory inventory) {
     }
 
     @Override
@@ -101,23 +99,23 @@ public class LecternInventoryTranslator extends BaseInventoryTranslator {
         LecternContainer lecternContainer = (LecternContainer) inventory;
         if (session.isDroppingLecternBook()) {
             // We have to enter the inventory GUI to eject the book
-            ServerboundContainerButtonClickPacket packet = new ServerboundContainerButtonClickPacket(inventory.getJavaId(), 3);
+            ServerboundContainerButtonClickPacket packet = new ServerboundContainerButtonClickPacket(inventory.getId(), 3);
             session.sendDownstreamPacket(packet);
             session.setDroppingLecternBook(false);
-            InventoryUtils.closeInventory(session, inventory.getJavaId(), false);
+            InventoryUtils.closeInventory(session, inventory.getId(), false);
         } else if (lecternContainer.getBlockEntityTag() == null) {
             CompoundTag tag = book.getNbt();
             // Position has to be the last interacted position... right?
             Vector3i position = session.getLastInteractionBlockPosition();
             // If shouldExpectLecternHandled returns true, this is already handled for us
             // shouldRefresh means that we should boot out the client on our side because their lectern GUI isn't updated yet
-            boolean shouldRefresh = !session.getGeyser().getWorldManager().shouldExpectLecternHandled(session) && !session.getLecternCache().contains(position);
+            boolean shouldRefresh = !session.getGeyser().getWorldManager().shouldExpectLecternHandled() && !session.getLecternCache().contains(position);
 
             NbtMap blockEntityTag;
             if (tag != null) {
                 int pagesSize = ((ListTag) tag.get("pages")).size();
                 ItemData itemData = book.getItemData(session);
-                NbtMapBuilder lecternTag = LecternUtils.getBaseLecternTag(position.getX(), position.getY(), position.getZ(), pagesSize);
+                NbtMapBuilder lecternTag = getBaseLecternTag(position.getX(), position.getY(), position.getZ(), pagesSize);
                 lecternTag.putCompound("book", NbtMap.builder()
                         .putByte("Count", (byte) itemData.getCount())
                         .putShort("Damage", (short) 0)
@@ -128,7 +126,7 @@ public class LecternInventoryTranslator extends BaseInventoryTranslator {
                 blockEntityTag = lecternTag.build();
             } else {
                 // There is *a* book here, but... no NBT.
-                NbtMapBuilder lecternTag = LecternUtils.getBaseLecternTag(position.getX(), position.getY(), position.getZ(), 1);
+                NbtMapBuilder lecternTag = getBaseLecternTag(position.getX(), position.getY(), position.getZ(), 1);
                 NbtMapBuilder bookTag = NbtMap.builder()
                         .putByte("Count", (byte) 1)
                         .putShort("Damage", (short) 0)
@@ -152,9 +150,9 @@ public class LecternInventoryTranslator extends BaseInventoryTranslator {
                 BlockEntityUtils.updateBlockEntity(session, blockEntityTag, position);
                 session.getLecternCache().add(position);
                 // Close the window - we will reopen it once the client has this data synced
-                ServerboundContainerClosePacket closeWindowPacket = new ServerboundContainerClosePacket(lecternContainer.getJavaId());
+                ServerboundContainerClosePacket closeWindowPacket = new ServerboundContainerClosePacket(lecternContainer.getId());
                 session.sendDownstreamPacket(closeWindowPacket);
-                InventoryUtils.closeInventory(session, inventory.getJavaId(), false);
+                InventoryUtils.closeInventory(session, inventory.getId(), false);
             }
         }
     }
@@ -162,5 +160,21 @@ public class LecternInventoryTranslator extends BaseInventoryTranslator {
     @Override
     public Inventory createInventory(String name, int windowId, ContainerType containerType, PlayerInventory playerInventory) {
         return new LecternContainer(name, windowId, this.size, containerType, playerInventory);
+    }
+
+    public static NbtMapBuilder getBaseLecternTag(int x, int y, int z, int totalPages) {
+        NbtMapBuilder builder = NbtMap.builder()
+                .putInt("x", x)
+                .putInt("y", y)
+                .putInt("z", z)
+                .putString("id", "Lectern");
+        if (totalPages != 0) {
+            builder.putByte("hasBook", (byte) 1);
+            builder.putInt("totalPages", totalPages);
+        } else {
+            // Not usually needed, but helps with kicking out Bedrock players from reading the UI
+            builder.putByte("hasBook", (byte) 0);
+        }
+        return builder;
     }
 }

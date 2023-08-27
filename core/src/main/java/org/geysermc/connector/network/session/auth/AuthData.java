@@ -33,7 +33,6 @@ import java.util.UUID;
  *
  * @deprecated legacy code
  */
-@Deprecated
 public class AuthData {
     private final org.geysermc.geyser.session.auth.AuthData handle;
 

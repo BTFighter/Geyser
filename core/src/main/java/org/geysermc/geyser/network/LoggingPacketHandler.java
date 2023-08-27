@@ -25,8 +25,9 @@
 
 package org.geysermc.geyser.network;
 
-import org.cloudburstmc.protocol.bedrock.packet.*;
-import org.cloudburstmc.protocol.common.PacketSignal;
+import com.nukkitx.protocol.bedrock.BedrockPacket;
+import com.nukkitx.protocol.bedrock.handler.BedrockPacketHandler;
+import com.nukkitx.protocol.bedrock.packet.*;
 import org.geysermc.geyser.GeyserImpl;
 import org.geysermc.geyser.session.GeyserSession;
 
@@ -45,828 +46,814 @@ public class LoggingPacketHandler implements BedrockPacketHandler {
         this.session = session;
     }
 
-    PacketSignal defaultHandler(BedrockPacket packet) {
+    boolean defaultHandler(BedrockPacket packet) {
         geyser.getLogger().debug("Handled packet: " + packet.getClass().getSimpleName());
-        return PacketSignal.HANDLED;
+        return false;
     }
 
     @Override
-    public PacketSignal handle(LoginPacket packet) {
+    public boolean handle(LoginPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(ResourcePackClientResponsePacket packet) {
+    public boolean handle(ResourcePackClientResponsePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(AdventureSettingsPacket packet) {
+    public boolean handle(AdventureSettingsPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(AnimatePacket packet) {
+    public boolean handle(AnimatePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(BlockEntityDataPacket packet) {
+    public boolean handle(BlockEntityDataPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(BlockPickRequestPacket packet) {
+    public boolean handle(BlockPickRequestPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(BookEditPacket packet) {
+    public boolean handle(BookEditPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(ClientCacheBlobStatusPacket packet) {
+    public boolean handle(ClientCacheBlobStatusPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(ClientCacheMissResponsePacket packet) {
+    public boolean handle(ClientCacheMissResponsePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(ClientCacheStatusPacket packet) {
+    public boolean handle(ClientCacheStatusPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(ClientToServerHandshakePacket packet) {
+    public boolean handle(ClientToServerHandshakePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(CommandBlockUpdatePacket packet) {
+    public boolean handle(CommandBlockUpdatePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(CommandRequestPacket packet) {
+    public boolean handle(CommandRequestPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(ContainerClosePacket packet) {
+    public boolean handle(ContainerClosePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(CraftingEventPacket packet) {
+    public boolean handle(CraftingEventPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(EntityEventPacket packet) {
+    public boolean handle(EntityEventPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(EntityPickRequestPacket packet) {
+    public boolean handle(EntityPickRequestPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(EventPacket packet) {
+    public boolean handle(EventPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(InteractPacket packet) {
+    public boolean handle(InteractPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(InventoryContentPacket packet) {
+    public boolean handle(InventoryContentPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(InventorySlotPacket packet) {
+    public boolean handle(InventorySlotPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(InventoryTransactionPacket packet) {
+    public boolean handle(InventoryTransactionPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(ItemFrameDropItemPacket packet) {
+    public boolean handle(ItemFrameDropItemPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(LabTablePacket packet) {
+    public boolean handle(LabTablePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(LecternUpdatePacket packet) {
+    public boolean handle(LecternUpdatePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(LevelEventGenericPacket packet) {
+    public boolean handle(LevelEventGenericPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(LevelSoundEventPacket packet) {
+    public boolean handle(LevelSoundEventPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(MapInfoRequestPacket packet) {
+    public boolean handle(MapInfoRequestPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(MobArmorEquipmentPacket packet) {
+    public boolean handle(MobArmorEquipmentPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(MobEquipmentPacket packet) {
+    public boolean handle(MobEquipmentPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(ModalFormResponsePacket packet) {
+    public boolean handle(ModalFormResponsePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(MoveEntityAbsolutePacket packet) {
+    public boolean handle(MoveEntityAbsolutePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(MovePlayerPacket packet) {
+    public boolean handle(MovePlayerPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(NetworkStackLatencyPacket packet) {
+    public boolean handle(NetworkStackLatencyPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(PhotoTransferPacket packet) {
+    public boolean handle(PhotoTransferPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(PlayerActionPacket packet) {
+    public boolean handle(PlayerActionPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(PlayerHotbarPacket packet) {
+    public boolean handle(PlayerHotbarPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(PlayerInputPacket packet) {
+    public boolean handle(PlayerInputPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(PlayerSkinPacket packet) {
+    public boolean handle(PlayerSkinPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(PurchaseReceiptPacket packet) {
+    public boolean handle(PurchaseReceiptPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(RequestChunkRadiusPacket packet) {
+    public boolean handle(RequestChunkRadiusPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(ResourcePackChunkRequestPacket packet) {
+    public boolean handle(ResourcePackChunkRequestPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(RiderJumpPacket packet) {
+    public boolean handle(RiderJumpPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(ServerSettingsRequestPacket packet) {
+    public boolean handle(ServerSettingsRequestPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(SetDefaultGameTypePacket packet) {
+    public boolean handle(SetDefaultGameTypePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(SetLocalPlayerAsInitializedPacket packet) {
+    public boolean handle(SetLocalPlayerAsInitializedPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(SetPlayerGameTypePacket packet) {
+    public boolean handle(SetPlayerGameTypePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(SubClientLoginPacket packet) {
+    public boolean handle(SubClientLoginPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(TextPacket packet) {
+    public boolean handle(TextPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(AddBehaviorTreePacket packet) {
+    public boolean handle(AddBehaviorTreePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(AddEntityPacket packet) {
+    public boolean handle(AddEntityPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(AddHangingEntityPacket packet) {
+    public boolean handle(AddHangingEntityPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(AddItemEntityPacket packet) {
+    public boolean handle(AddItemEntityPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(AddPaintingPacket packet) {
+    public boolean handle(AddPaintingPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(AddPlayerPacket packet) {
+    public boolean handle(AddPlayerPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(AvailableCommandsPacket packet) {
+    public boolean handle(AvailableCommandsPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(BlockEventPacket packet) {
+    public boolean handle(BlockEventPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(BossEventPacket packet) {
+    public boolean handle(BossEventPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(CameraPacket packet) {
+    public boolean handle(CameraPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(ChangeDimensionPacket packet) {
+    public boolean handle(ChangeDimensionPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(ChunkRadiusUpdatedPacket packet) {
+    public boolean handle(ChunkRadiusUpdatedPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(ClientboundMapItemDataPacket packet) {
+    public boolean handle(ClientboundMapItemDataPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(CommandOutputPacket packet) {
+    public boolean handle(CommandOutputPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(ContainerOpenPacket packet) {
+    public boolean handle(ContainerOpenPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(ContainerSetDataPacket packet) {
+    public boolean handle(ContainerSetDataPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(CraftingDataPacket packet) {
+    public boolean handle(CraftingDataPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(DisconnectPacket packet) {
+    public boolean handle(DisconnectPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(ExplodePacket packet) {
+    public boolean handle(ExplodePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(LevelChunkPacket packet) {
+    public boolean handle(LevelChunkPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(GameRulesChangedPacket packet) {
+    public boolean handle(GameRulesChangedPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(GuiDataPickItemPacket packet) {
+    public boolean handle(GuiDataPickItemPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(HurtArmorPacket packet) {
+    public boolean handle(HurtArmorPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(AutomationClientConnectPacket packet) {
+    public boolean handle(AutomationClientConnectPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(LevelEventPacket packet) {
+    public boolean handle(LevelEventPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(MapCreateLockedCopyPacket packet) {
+    public boolean handle(MapCreateLockedCopyPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(MobEffectPacket packet) {
+    public boolean handle(MobEffectPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(ModalFormRequestPacket packet) {
+    public boolean handle(ModalFormRequestPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(MoveEntityDeltaPacket packet) {
+    public boolean handle(MoveEntityDeltaPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(NpcRequestPacket packet) {
+    public boolean handle(NpcRequestPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(OnScreenTextureAnimationPacket packet) {
+    public boolean handle(OnScreenTextureAnimationPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(PlayerListPacket packet) {
+    public boolean handle(PlayerListPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(PlaySoundPacket packet) {
+    public boolean handle(PlaySoundPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(PlayStatusPacket packet) {
+    public boolean handle(PlayStatusPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(RemoveEntityPacket packet) {
+    public boolean handle(RemoveEntityPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(RemoveObjectivePacket packet) {
+    public boolean handle(RemoveObjectivePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(ResourcePackChunkDataPacket packet) {
+    public boolean handle(ResourcePackChunkDataPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(ResourcePackDataInfoPacket packet) {
+    public boolean handle(ResourcePackDataInfoPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(ResourcePacksInfoPacket packet) {
+    public boolean handle(ResourcePacksInfoPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(ResourcePackStackPacket packet) {
+    public boolean handle(ResourcePackStackPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(RespawnPacket packet) {
+    public boolean handle(RespawnPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(ScriptCustomEventPacket packet) {
+    public boolean handle(ScriptCustomEventPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(ServerSettingsResponsePacket packet) {
+    public boolean handle(ServerSettingsResponsePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(ServerToClientHandshakePacket packet) {
+    public boolean handle(ServerToClientHandshakePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(SetCommandsEnabledPacket packet) {
+    public boolean handle(SetCommandsEnabledPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(SetDifficultyPacket packet) {
+    public boolean handle(SetDifficultyPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(SetDisplayObjectivePacket packet) {
+    public boolean handle(SetDisplayObjectivePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(SetEntityDataPacket packet) {
+    public boolean handle(SetEntityDataPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(SetEntityLinkPacket packet) {
+    public boolean handle(SetEntityLinkPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(SetEntityMotionPacket packet) {
+    public boolean handle(SetEntityMotionPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(SetHealthPacket packet) {
+    public boolean handle(SetHealthPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(SetLastHurtByPacket packet) {
+    public boolean handle(SetLastHurtByPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(SetScoreboardIdentityPacket packet) {
+    public boolean handle(SetScoreboardIdentityPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(SetScorePacket packet) {
+    public boolean handle(SetScorePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(SetSpawnPositionPacket packet) {
+    public boolean handle(SetSpawnPositionPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(SetTimePacket packet) {
+    public boolean handle(SetTimePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(SetTitlePacket packet) {
+    public boolean handle(SetTitlePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(ShowCreditsPacket packet) {
+    public boolean handle(ShowCreditsPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(ShowProfilePacket packet) {
+    public boolean handle(ShowProfilePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(ShowStoreOfferPacket packet) {
+    public boolean handle(ShowStoreOfferPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(SimpleEventPacket packet) {
+    public boolean handle(SimpleEventPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(SpawnExperienceOrbPacket packet) {
+    public boolean handle(SpawnExperienceOrbPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(StartGamePacket packet) {
+    public boolean handle(StartGamePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(StopSoundPacket packet) {
+    public boolean handle(StopSoundPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(StructureBlockUpdatePacket packet) {
+    public boolean handle(StructureBlockUpdatePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(StructureTemplateDataRequestPacket packet) {
+    public boolean handle(StructureTemplateDataRequestPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(StructureTemplateDataResponsePacket packet) {
+    public boolean handle(StructureTemplateDataResponsePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(TakeItemEntityPacket packet) {
+    public boolean handle(TakeItemEntityPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(TransferPacket packet) {
+    public boolean handle(TransferPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(UpdateAttributesPacket packet) {
+    public boolean handle(UpdateAttributesPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(UpdateBlockPacket packet) {
+    public boolean handle(UpdateBlockPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(UpdateBlockPropertiesPacket packet) {
+    public boolean handle(UpdateBlockPropertiesPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(UpdateBlockSyncedPacket packet) {
+    public boolean handle(UpdateBlockSyncedPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(UpdateEquipPacket packet) {
+    public boolean handle(UpdateEquipPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(UpdateSoftEnumPacket packet) {
+    public boolean handle(UpdateSoftEnumPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(UpdateTradePacket packet) {
+    public boolean handle(UpdateTradePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(AvailableEntityIdentifiersPacket packet) {
+    public boolean handle(AvailableEntityIdentifiersPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(BiomeDefinitionListPacket packet) {
+    public boolean handle(BiomeDefinitionListPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(LevelSoundEvent2Packet packet) {
+    public boolean handle(LevelSoundEvent2Packet packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(NetworkChunkPublisherUpdatePacket packet) {
+    public boolean handle(NetworkChunkPublisherUpdatePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(SpawnParticleEffectPacket packet) {
+    public boolean handle(SpawnParticleEffectPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(VideoStreamConnectPacket packet) {
+    public boolean handle(VideoStreamConnectPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(EmotePacket packet) {
+    public boolean handle(EmotePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(TickSyncPacket packet) {
+    public boolean handle(TickSyncPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(AnvilDamagePacket packet) {
+    public boolean handle(AnvilDamagePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(NetworkSettingsPacket packet) {
+    public boolean handle(NetworkSettingsPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(PlayerAuthInputPacket packet) {
+    public boolean handle(PlayerAuthInputPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(SettingsCommandPacket packet) {
+    public boolean handle(SettingsCommandPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(EducationSettingsPacket packet) {
+    public boolean handle(EducationSettingsPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(CompletedUsingItemPacket packet) {
+    public boolean handle(CompletedUsingItemPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(MultiplayerSettingsPacket packet) {
+    public boolean handle(MultiplayerSettingsPacket packet) {
         return defaultHandler(packet);
     }
 
     // 1.16 new packets
 
     @Override
-    public PacketSignal handle(DebugInfoPacket packet) {
+    public boolean handle(DebugInfoPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(EmoteListPacket packet) {
+    public boolean handle(EmoteListPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(CodeBuilderPacket packet) {
+    public boolean handle(CodeBuilderPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(CreativeContentPacket packet) {
+    public boolean handle(CreativeContentPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(ItemStackRequestPacket packet) {
+    public boolean handle(ItemStackRequestPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(LevelSoundEvent1Packet packet) {
+    public boolean handle(LevelSoundEvent1Packet packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(ItemStackResponsePacket packet) {
+    public boolean handle(ItemStackResponsePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(PlayerArmorDamagePacket packet) {
+    public boolean handle(PlayerArmorDamagePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(PlayerEnchantOptionsPacket packet) {
+    public boolean handle(PlayerEnchantOptionsPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(UpdatePlayerGameTypePacket packet) {
+    public boolean handle(UpdatePlayerGameTypePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(PacketViolationWarningPacket packet) {
+    public boolean handle(PacketViolationWarningPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(PositionTrackingDBClientRequestPacket packet) {
+    public boolean handle(PositionTrackingDBClientRequestPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(PositionTrackingDBServerBroadcastPacket packet) {
+    public boolean handle(PositionTrackingDBServerBroadcastPacket packet) {
         return defaultHandler(packet);
     }
 
     // 1.16.100 new packets
 
     @Override
-    public PacketSignal handle(MotionPredictionHintsPacket packet) {
+    public boolean handle(MotionPredictionHintsPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(AnimateEntityPacket packet) {
+    public boolean handle(AnimateEntityPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(CameraShakePacket packet) {
+    public boolean handle(CameraShakePacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(PlayerFogPacket packet) {
+    public boolean handle(PlayerFogPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(CorrectPlayerMovePredictionPacket packet) {
+    public boolean handle(CorrectPlayerMovePredictionPacket packet) {
         return defaultHandler(packet);
     }
 
     @Override
-    public PacketSignal handle(ItemComponentPacket packet) {
+    public boolean handle(ItemComponentPacket packet) {
         return defaultHandler(packet);
     }
 
     // 1.16.200 new packet
 
     @Override
-    public PacketSignal handle(FilterTextPacket packet) {
-        return defaultHandler(packet);
-    }
-
-    // 1.19.0 new packet
-
-    @Override
-    public PacketSignal handle(RequestAbilityPacket packet) {
-        return defaultHandler(packet);
-    }
-
-    // 1.19.30 new packet
-
-    @Override
-    public PacketSignal handle(RequestNetworkSettingsPacket packet) {
+    public boolean handle(FilterTextPacket packet) {
         return defaultHandler(packet);
     }
 }

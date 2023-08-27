@@ -26,13 +26,11 @@
 package org.geysermc.geyser.entity.type.living.monster;
 
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
-import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
-import org.cloudburstmc.math.vector.Vector3f;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
+import com.nukkitx.math.vector.Vector3f;
+import com.nukkitx.protocol.bedrock.data.entity.EntityData;
+import com.nukkitx.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.EntityDefinition;
 import org.geysermc.geyser.inventory.GeyserItemStack;
-import org.geysermc.geyser.item.Items;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
@@ -48,7 +46,7 @@ public class PiglinEntity extends BasePiglinEntity {
 
     public void setBaby(BooleanEntityMetadata entityMetadata) {
         boolean isBaby = entityMetadata.getPrimitiveValue();
-        dirtyMetadata.put(EntityDataTypes.SCALE, isBaby? .55f : 1f);
+        dirtyMetadata.put(EntityData.SCALE, isBaby? .55f : 1f);
         setFlag(EntityFlag.BABY, isBaby);
 
         updateMountOffset();
@@ -65,7 +63,7 @@ public class PiglinEntity extends BasePiglinEntity {
     @Override
     public void updateOffHand(GeyserSession session) {
         // Check if the Piglin is holding Gold and set the ADMIRING flag accordingly so its pose updates
-        setFlag(EntityFlag.ADMIRING, session.getTagCache().shouldPiglinAdmire(session.getItemMappings().getMapping(this.offHand).getJavaItem()));
+        setFlag(EntityFlag.ADMIRING, session.getTagCache().shouldPiglinAdmire(session.getItemMappings().getMapping(this.offHand)));
         super.updateBedrockMetadata();
 
         super.updateOffHand(session);
@@ -73,8 +71,8 @@ public class PiglinEntity extends BasePiglinEntity {
 
     @Nonnull
     @Override
-    protected InteractiveTag testMobInteraction(@Nonnull Hand hand, @Nonnull GeyserItemStack itemInHand) {
-        InteractiveTag tag = super.testMobInteraction(hand, itemInHand);
+    protected InteractiveTag testMobInteraction(@Nonnull GeyserItemStack itemInHand) {
+        InteractiveTag tag = super.testMobInteraction(itemInHand);
         if (tag != InteractiveTag.NONE) {
             return tag;
         } else {
@@ -84,8 +82,8 @@ public class PiglinEntity extends BasePiglinEntity {
 
     @Nonnull
     @Override
-    protected InteractionResult mobInteract(@Nonnull Hand hand, @Nonnull GeyserItemStack itemInHand) {
-        InteractionResult superResult = super.mobInteract(hand, itemInHand);
+    protected InteractionResult mobInteract(@Nonnull GeyserItemStack itemInHand) {
+        InteractionResult superResult = super.mobInteract(itemInHand);
         if (superResult.consumesAction()) {
             return superResult;
         } else {
@@ -94,6 +92,6 @@ public class PiglinEntity extends BasePiglinEntity {
     }
 
     private boolean canGiveGoldTo(@Nonnull GeyserItemStack itemInHand) {
-        return !getFlag(EntityFlag.BABY) && itemInHand.asItem() == Items.GOLD_INGOT && !getFlag(EntityFlag.ADMIRING);
+        return !getFlag(EntityFlag.BABY) && itemInHand.getJavaId() == session.getItemMappings().getStoredItems().goldIngot() && !getFlag(EntityFlag.ADMIRING);
     }
 }

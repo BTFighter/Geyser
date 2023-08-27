@@ -26,7 +26,7 @@
 package org.geysermc.connector.network.session;
 
 import com.github.steveice10.packetlib.packet.Packet;
-import org.cloudburstmc.protocol.bedrock.packet.BedrockPacket;
+import com.nukkitx.protocol.bedrock.BedrockPacket;
 import org.geysermc.connector.network.session.auth.AuthData;
 
 /**
@@ -56,11 +56,11 @@ public class GeyserSession {
     }
 
     public String getRemoteAddress() {
-        return this.handle.remoteServer().address();
+        return this.handle.getRemoteAddress();
     }
 
     public int getRemotePort() {
-        return this.handle.remoteServer().port();
+        return this.handle.getRemotePort();
     }
 
     public int getRenderDistance() {
@@ -128,7 +128,7 @@ public class GeyserSession {
     }
 
     public String getName() {
-        return this.handle.bedrockUsername();
+        return this.handle.name();
     }
 
     public boolean isConsole() {
@@ -136,7 +136,7 @@ public class GeyserSession {
     }
 
     public String getLocale() {
-        return this.handle.locale();
+        return this.handle.getLocale();
     }
 
     public void sendUpstreamPacket(BedrockPacket packet) {

@@ -26,16 +26,19 @@
 package org.geysermc.geyser.translator.inventory;
 
 import com.github.steveice10.mc.protocol.data.game.inventory.ContainerType;
-import org.cloudburstmc.protocol.bedrock.data.inventory.ContainerSlotType;
-import org.cloudburstmc.protocol.bedrock.data.inventory.itemstack.request.ItemStackRequestSlotData;
-import org.geysermc.geyser.inventory.*;
-import org.geysermc.geyser.inventory.updater.UIInventoryUpdater;
-import org.geysermc.geyser.item.Items;
+import com.nukkitx.protocol.bedrock.data.inventory.ContainerSlotType;
+import com.nukkitx.protocol.bedrock.data.inventory.StackRequestSlotInfoData;
+import org.geysermc.geyser.inventory.CartographyContainer;
+import org.geysermc.geyser.inventory.GeyserItemStack;
+import org.geysermc.geyser.inventory.Inventory;
+import org.geysermc.geyser.inventory.PlayerInventory;
 import org.geysermc.geyser.session.GeyserSession;
+import org.geysermc.geyser.inventory.BedrockContainerSlot;
+import org.geysermc.geyser.inventory.updater.UIInventoryUpdater;
 
 public class CartographyInventoryTranslator extends AbstractBlockInventoryTranslator {
     public CartographyInventoryTranslator() {
-        super(3, "minecraft:cartography_table", org.cloudburstmc.protocol.bedrock.data.inventory.ContainerType.CARTOGRAPHY, UIInventoryUpdater.INSTANCE);
+        super(3, "minecraft:cartography_table", com.nukkitx.protocol.bedrock.data.inventory.ContainerType.CARTOGRAPHY, UIInventoryUpdater.INSTANCE);
     }
 
     @Override
@@ -44,21 +47,21 @@ public class CartographyInventoryTranslator extends AbstractBlockInventoryTransl
         if (javaDestinationSlot == 0) {
             // Bedrock Edition can use paper or an empty map in slot 0
             GeyserItemStack itemStack = javaSourceSlot == -1 ? session.getPlayerInventory().getCursor() : inventory.getItem(javaSourceSlot);
-            return itemStack.asItem() == Items.PAPER || itemStack.asItem() == Items.MAP;
+            return itemStack.getMapping(session).getJavaIdentifier().equals("minecraft:paper") || itemStack.getMapping(session).getJavaIdentifier().equals("minecraft:map");
         } else if (javaDestinationSlot == 1) {
             // Bedrock Edition can use a compass to create locator maps, or use a filled map, in the ADDITIONAL slot
             GeyserItemStack itemStack = javaSourceSlot == -1 ? session.getPlayerInventory().getCursor() : inventory.getItem(javaSourceSlot);
-            return itemStack.asItem() == Items.COMPASS || itemStack.asItem() == Items.FILLED_MAP;
+            return itemStack.getMapping(session).getJavaIdentifier().equals("minecraft:compass") || itemStack.getMapping(session).getJavaIdentifier().equals("minecraft:filled_map");
         }
         return false;
     }
 
     @Override
-    public int bedrockSlotToJava(ItemStackRequestSlotData slotInfoData) {
+    public int bedrockSlotToJava(StackRequestSlotInfoData slotInfoData) {
         return switch (slotInfoData.getContainer()) {
             case CARTOGRAPHY_INPUT -> 0;
             case CARTOGRAPHY_ADDITIONAL -> 1;
-            case CARTOGRAPHY_RESULT, CREATED_OUTPUT -> 2;
+            case CARTOGRAPHY_RESULT, CREATIVE_OUTPUT -> 2;
             default -> super.bedrockSlotToJava(slotInfoData);
         };
     }

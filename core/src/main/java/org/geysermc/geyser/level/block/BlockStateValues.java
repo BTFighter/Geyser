@@ -29,11 +29,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import it.unimi.dsi.fastutil.ints.*;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-import org.geysermc.geyser.level.physics.Direction;
-import org.geysermc.geyser.level.physics.PistonBehavior;
+import org.geysermc.geyser.translator.level.block.entity.PistonBlockEntityTranslator;
 import org.geysermc.geyser.registry.BlockRegistries;
 import org.geysermc.geyser.registry.type.BlockMapping;
-import org.geysermc.geyser.translator.level.block.entity.PistonBlockEntityTranslator;
+import org.geysermc.geyser.level.physics.Direction;
+import org.geysermc.geyser.level.physics.PistonBehavior;
 import org.geysermc.geyser.util.collection.FixedInt2ByteMap;
 import org.geysermc.geyser.util.collection.FixedInt2IntMap;
 import org.geysermc.geyser.util.collection.LecternHasBookMap;
@@ -44,10 +44,8 @@ import java.util.Locale;
  * Used for block entities if the Java block state contains Bedrock block information.
  */
 public final class BlockStateValues {
-    private static final IntSet ALL_CAULDRONS = new IntOpenHashSet();
     private static final Int2IntMap BANNER_COLORS = new FixedInt2IntMap();
     private static final Int2ByteMap BED_COLORS = new FixedInt2ByteMap();
-    private static final Int2IntMap BRUSH_PROGRESS = new Int2IntOpenHashMap();
     private static final Int2ByteMap COMMAND_BLOCK_VALUES = new Int2ByteOpenHashMap();
     private static final Int2ObjectMap<DoubleChestValue> DOUBLE_CHEST_VALUES = new Int2ObjectOpenHashMap<>();
     private static final Int2ObjectMap<String> FLOWER_POT_VALUES = new Int2ObjectOpenHashMap<>();
@@ -69,6 +67,7 @@ public final class BlockStateValues {
 
     public static final int JAVA_AIR_ID = 0;
 
+    public static int JAVA_BELL_ID;
     public static int JAVA_COBWEB_ID;
     public static int JAVA_FURNACE_ID;
     public static int JAVA_FURNACE_LIT_ID;
@@ -76,8 +75,6 @@ public final class BlockStateValues {
     public static int JAVA_SLIME_BLOCK_ID;
     public static int JAVA_SPAWNER_ID;
     public static int JAVA_WATER_ID;
-
-    public static final int NUM_WATER_LEVELS = 9;
 
     /**
      * Determines if the block state contains Bedrock block information
@@ -97,15 +94,6 @@ public final class BlockStateValues {
         if (bedColor != null) {
             BED_COLORS.put(javaBlockState, (byte) bedColor.intValue());
             return;
-        }
-
-        JsonNode bedrockStates = blockData.get("bedrock_states");
-        if (bedrockStates != null) {
-            JsonNode brushedProgress = bedrockStates.get("brushed_progress");
-            if (brushedProgress != null) {
-                BRUSH_PROGRESS.put(javaBlockState, brushedProgress.intValue());
-                return;
-            }
         }
 
         if (javaId.contains("command_block")) {
@@ -205,9 +193,6 @@ public final class BlockStateValues {
             return;
         }
 
-        if (javaId.contains("cauldron")) {
-            ALL_CAULDRONS.add(javaBlockState);
-        }
         if (javaId.contains("_cauldron") && !javaId.contains("water_")) {
              NON_WATER_CAULDRONS.add(javaBlockState);
         }
@@ -236,32 +221,12 @@ public final class BlockStateValues {
     }
 
     /**
-     * The brush progress of suspicious sand/gravel is not sent by the java server when it updates the block entity.
-     * Although brush progress is part of the bedrock block state, it must be included in the block entity update.
-     *
-     * @param state BlockState of the block
-     * @return brush progress or 0 if the lookup failed
-     */
-    public static int getBrushProgress(int state) {
-        return BRUSH_PROGRESS.getOrDefault(state, 0);
-    }
-
-    /**
      * Non-water cauldrons (since Bedrock 1.18.30) must have a block entity packet sent on chunk load to fix rendering issues.
      *
      * @return if this Java block state is a non-empty non-water cauldron
      */
-    public static boolean isNonWaterCauldron(int state) {
-        return NON_WATER_CAULDRONS.contains(state);
-    }
-
-    /**
-     * When using a bucket on a cauldron sending a ServerboundUseItemPacket can result in the liquid being placed.
-     *
-     * @return if this Java block state is a cauldron
-     */
     public static boolean isCauldron(int state) {
-        return ALL_CAULDRONS.contains(state);
+        return NON_WATER_CAULDRONS.contains(state);
     }
 
     /**
@@ -471,36 +436,13 @@ public final class BlockStateValues {
 
     /**
      * Get the level of water from the block state.
+     * This is used in FishingHookEntity to create splash sounds when the hook hits the water.
      *
      * @param state BlockState of the block
      * @return The water level or -1 if the block isn't water
      */
     public static int getWaterLevel(int state) {
         return WATER_LEVEL.getOrDefault(state, -1);
-    }
-
-    /**
-     * Get the height of water from the block state
-     * This is used in FishingHookEntity to create splash sounds when the hook hits the water. In addition,
-     * CollisionManager uses this to determine if the player's eyes are in water.
-     *
-     * @param state BlockState of the block
-     * @return The water height or -1 if the block does not contain water
-     */
-    public static double getWaterHeight(int state) {
-        int waterLevel = BlockStateValues.getWaterLevel(state);
-        if (BlockRegistries.WATERLOGGED.get().get(state)) {
-            waterLevel = 0;
-        }
-        if (waterLevel >= 0) {
-            double waterHeight = 1 - (waterLevel + 1) / ((double) NUM_WATER_LEVELS);
-            // Falling water is a full block
-            if (waterLevel >= 8) {
-                waterHeight = 1;
-            }
-            return waterHeight;
-        }
-        return -1;
     }
 
     /**

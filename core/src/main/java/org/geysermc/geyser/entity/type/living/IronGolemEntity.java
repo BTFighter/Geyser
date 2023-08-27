@@ -25,13 +25,11 @@
 
 package org.geysermc.geyser.entity.type.living;
 
-import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
-import org.cloudburstmc.math.vector.Vector3f;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
+import com.nukkitx.math.vector.Vector3f;
+import com.nukkitx.protocol.bedrock.data.entity.EntityData;
+import com.nukkitx.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.EntityDefinition;
 import org.geysermc.geyser.inventory.GeyserItemStack;
-import org.geysermc.geyser.item.Items;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.util.InteractionResult;
 
@@ -45,16 +43,13 @@ public class IronGolemEntity extends GolemEntity {
         // Indicate that we should show cracks through a resource pack
         setFlag(EntityFlag.BRIBED, true);
         // Required, or else the overlay is black
-        dirtyMetadata.put(EntityDataTypes.COLOR_2, (byte) 0);
-        // Default max health. Ensures correct cracked texture is used
-        // Bug reproducible in 1.19.0 JE vanilla/fabric when spawning a new iron golem
-        maxHealth = 100f;
+        dirtyMetadata.put(EntityData.COLOR_2, (byte) 0);
     }
 
     @Nonnull
     @Override
-    protected InteractionResult mobInteract(@Nonnull Hand hand, @Nonnull GeyserItemStack itemInHand) {
-        if (itemInHand.asItem() == Items.IRON_INGOT) {
+    protected InteractionResult mobInteract(@Nonnull GeyserItemStack itemInHand) {
+        if (itemInHand.getJavaId() == session.getItemMappings().getStoredItems().ironIngot()) {
             if (health < maxHealth) {
                 // Healing the iron golem
                 return InteractionResult.SUCCESS;
@@ -62,6 +57,6 @@ public class IronGolemEntity extends GolemEntity {
                 return InteractionResult.PASS;
             }
         }
-        return super.mobInteract(hand, itemInHand);
+        return super.mobInteract(itemInHand);
     }
 }

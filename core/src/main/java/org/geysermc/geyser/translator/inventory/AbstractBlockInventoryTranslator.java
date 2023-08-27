@@ -25,12 +25,12 @@
 
 package org.geysermc.geyser.translator.inventory;
 
-import org.cloudburstmc.protocol.bedrock.data.inventory.ContainerType;
+import com.nukkitx.protocol.bedrock.data.inventory.ContainerType;
 import org.geysermc.geyser.inventory.Inventory;
+import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.inventory.holder.BlockInventoryHolder;
 import org.geysermc.geyser.inventory.holder.InventoryHolder;
 import org.geysermc.geyser.inventory.updater.InventoryUpdater;
-import org.geysermc.geyser.session.GeyserSession;
 
 /**
  * Provided as a base for any inventory that requires a block for opening it
@@ -65,8 +65,8 @@ public abstract class AbstractBlockInventoryTranslator extends BaseInventoryTran
     }
 
     @Override
-    public boolean prepareInventory(GeyserSession session, Inventory inventory) {
-        return holder.prepareInventory(this, session, inventory);
+    public void prepareInventory(GeyserSession session, Inventory inventory) {
+        holder.prepareInventory(this, session, inventory);
     }
 
     @Override

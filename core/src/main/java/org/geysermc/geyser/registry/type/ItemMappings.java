@@ -26,23 +26,17 @@
 package org.geysermc.geyser.registry.type;
 
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.ItemStack;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
+import com.nukkitx.protocol.bedrock.data.inventory.ComponentItemData;
+import com.nukkitx.protocol.bedrock.data.inventory.ItemData;
+import com.nukkitx.protocol.bedrock.packet.StartGamePacket;
+import it.unimi.dsi.fastutil.ints.IntList;
 import lombok.Builder;
 import lombok.Value;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
-import org.cloudburstmc.protocol.bedrock.data.definitions.ItemDefinition;
-import org.cloudburstmc.protocol.bedrock.data.inventory.ComponentItemData;
-import org.cloudburstmc.protocol.bedrock.data.inventory.ItemData;
-import org.cloudburstmc.protocol.common.DefinitionRegistry;
 import org.geysermc.geyser.GeyserImpl;
-import org.geysermc.geyser.api.block.custom.CustomBlockData;
 import org.geysermc.geyser.inventory.item.StoredItemMappings;
-import org.geysermc.geyser.item.Items;
-import org.geysermc.geyser.item.type.Item;
-import org.geysermc.geyser.item.type.PotionItem;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -50,7 +44,7 @@ import java.util.WeakHashMap;
 
 @Builder
 @Value
-public class ItemMappings implements DefinitionRegistry<ItemDefinition> {
+public class ItemMappings {
 
     Map<String, ItemMapping> cachedJavaMappings = new WeakHashMap<>();
 
@@ -62,19 +56,18 @@ public class ItemMappings implements DefinitionRegistry<ItemDefinition> {
     ItemMapping lodestoneCompass;
 
     ItemData[] creativeItems;
-    Int2ObjectMap<ItemDefinition> itemDefinitions;
+    List<StartGamePacket.ItemEntry> itemEntries;
 
     StoredItemMappings storedItems;
-    Set<Item> javaOnlyItems;
+    String[] itemNames;
+    Set<String> javaOnlyItems;
 
-    List<ItemDefinition> buckets;
-    List<ItemDefinition> boats;
+    IntList bucketIds;
+    IntList boatIds;
+    IntList spawnEggIds;
     List<ItemData> carpets;
 
-    List<ComponentItemData> componentItemData;
-    Int2ObjectMap<String> customIdMappings;
-
-    Object2ObjectMap<CustomBlockData, ItemDefinition> customBlockItemDefinitions;
+    @Nullable ComponentItemData furnaceMinecartData;
 
     /**
      * Gets an {@link ItemMapping} from the given {@link ItemStack}.
@@ -82,7 +75,7 @@ public class ItemMappings implements DefinitionRegistry<ItemDefinition> {
      * @param itemStack the itemstack
      * @return an item entry from the given java edition identifier
      */
-    @NonNull
+    @Nonnull
     public ItemMapping getMapping(ItemStack itemStack) {
         return this.getMapping(itemStack.getId());
     }
@@ -94,14 +87,9 @@ public class ItemMappings implements DefinitionRegistry<ItemDefinition> {
      * @param javaId the id
      * @return an item entry from the given java edition identifier
      */
-    @NonNull
+    @Nonnull
     public ItemMapping getMapping(int javaId) {
         return javaId >= 0 && javaId < this.items.length ? this.items[javaId] : ItemMapping.AIR;
-    }
-
-    @Nullable
-    public ItemMapping getMapping(Item javaItem) {
-        return getMapping(javaItem.javaIdentifier());
     }
 
     /**
@@ -111,11 +99,10 @@ public class ItemMappings implements DefinitionRegistry<ItemDefinition> {
      * @param javaIdentifier the block state identifier
      * @return an item entry from the given java edition identifier
      */
-    @Nullable
     public ItemMapping getMapping(String javaIdentifier) {
         return this.cachedJavaMappings.computeIfAbsent(javaIdentifier, key -> {
             for (ItemMapping mapping : this.items) {
-                if (mapping.getJavaItem().javaIdentifier().equals(key)) {
+                if (mapping.getJavaIdentifier().equals(key)) {
                     return mapping;
                 }
             }
@@ -129,61 +116,42 @@ public class ItemMappings implements DefinitionRegistry<ItemDefinition> {
      * @param data the item data
      * @return an item entry from the given item data
      */
-    @NonNull
     public ItemMapping getMapping(ItemData data) {
-        ItemDefinition definition = data.getDefinition();
-        if (ItemDefinition.AIR.equals(definition)) {
+        int id = data.getId();
+        if (id == 0) {
             return ItemMapping.AIR;
-        } else if (definition.getRuntimeId() == lodestoneCompass.getBedrockDefinition().getRuntimeId()) {
+        } else if (id == lodestoneCompass.getBedrockId()) {
             return lodestoneCompass;
         }
 
-        boolean isBlock = data.getBlockDefinition() != null;
+        boolean isBlock = data.getBlockRuntimeId() != 0;
         boolean hasDamage = data.getDamage() != 0;
 
         for (ItemMapping mapping : this.items) {
-            if (mapping.getBedrockDefinition().getRuntimeId() == definition.getRuntimeId()) {
+            if (mapping.getBedrockId() == id) {
                 if (isBlock && !hasDamage) { // Pre-1.16.220 will not use block runtime IDs at all, so we shouldn't check either
-                    if (data.getBlockDefinition() != mapping.getBedrockBlockDefinition()) {
+                    if (data.getBlockRuntimeId() != mapping.getBedrockBlockId()) {
                         continue;
                     }
                 } else {
                     if (!(mapping.getBedrockData() == data.getDamage() ||
-                            // Make exceptions for potions, tipped arrows, firework stars, and goat horns, whose damage values can vary
-                            (mapping.getJavaItem() instanceof PotionItem || mapping.getJavaItem() == Items.ARROW
-                                    || mapping.getJavaItem() == Items.FIREWORK_STAR || mapping.getJavaItem() == Items.GOAT_HORN))) {
+                            // Make exceptions for potions, tipped arrows, and firework stars, whose damage values can vary
+                            (mapping.getJavaIdentifier().endsWith("potion") || mapping.getJavaIdentifier().equals("minecraft:arrow")
+                                    || mapping.getJavaIdentifier().equals("minecraft:firework_star")))) {
                         continue;
                     }
                 }
-                if (!this.javaOnlyItems.contains(mapping.getJavaItem())) {
+                if (!this.javaOnlyItems.contains(mapping.getJavaIdentifier())) {
                     // From a Bedrock item data, we aren't getting one of these items
                     return mapping;
                 }
             }
         }
 
-        GeyserImpl.getInstance().getLogger().debug("Missing mapping for bedrock item " + data);
-        return ItemMapping.AIR;
-    }
-
-    @Nullable
-    @Override
-    public ItemDefinition getDefinition(int bedrockId) {
-        return this.itemDefinitions.get(bedrockId);
-    }
-
-    @Nullable
-    public ItemDefinition getDefinition(String bedrockIdentifier) {
-        for (ItemDefinition itemDefinition : this.itemDefinitions.values()) {
-            if (itemDefinition.getIdentifier().equals(bedrockIdentifier)) {
-                return itemDefinition;
-            }
+        // This will hide the message when the player clicks with an empty hand
+        if (id != 0 && data.getDamage() != 0) {
+            GeyserImpl.getInstance().getLogger().debug("Missing mapping for bedrock item " + data.getId() + ":" + data.getDamage());
         }
-        return null;
-    }
-
-    @Override
-    public boolean isRegistered(ItemDefinition definition) {
-        return getDefinition(definition.getRuntimeId()) == definition;
+        return ItemMapping.AIR;
     }
 }

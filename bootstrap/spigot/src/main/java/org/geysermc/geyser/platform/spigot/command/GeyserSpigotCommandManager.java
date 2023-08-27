@@ -30,11 +30,11 @@ import org.bukkit.Server;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandMap;
 import org.geysermc.geyser.GeyserImpl;
-import org.geysermc.geyser.command.GeyserCommandManager;
+import org.geysermc.geyser.command.CommandManager;
 
 import java.lang.reflect.Field;
 
-public class GeyserSpigotCommandManager extends GeyserCommandManager {
+public class GeyserSpigotCommandManager extends CommandManager {
 
     private static final CommandMap COMMAND_MAP;
 
@@ -61,12 +61,8 @@ public class GeyserSpigotCommandManager extends GeyserCommandManager {
     }
 
     @Override
-    public String description(String command) {
+    public String getDescription(String command) {
         Command cmd = COMMAND_MAP.getCommand(command.replace("/", ""));
         return cmd != null ? cmd.getDescription() : "";
-    }
-
-    public static CommandMap getCommandMap() {
-        return COMMAND_MAP;
     }
 }

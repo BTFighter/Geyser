@@ -25,56 +25,45 @@
 
 package org.geysermc.geyser.registry.type;
 
-import it.unimi.dsi.fastutil.Pair;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.cloudburstmc.protocol.bedrock.data.definitions.BlockDefinition;
-import org.cloudburstmc.protocol.bedrock.data.definitions.ItemDefinition;
-import org.geysermc.geyser.api.item.custom.CustomItemOptions;
-import org.geysermc.geyser.item.Items;
-import org.geysermc.geyser.item.type.Item;
+import org.geysermc.geyser.network.MinecraftProtocol;
+import org.geysermc.geyser.registry.BlockRegistries;
 
-import java.util.Collections;
-import java.util.List;
+import java.util.Set;
 
 @Value
 @Builder
 @EqualsAndHashCode
 public class ItemMapping {
-    public static final ItemMapping AIR = new ItemMapping(
-            "minecraft:air",
-            ItemDefinition.AIR,
-            0,
-            null, // Air is never sent in full over the network for this to serialize.
-            null,
-            null,
-            null,
-            Collections.emptyList(),
-            Items.AIR
-    );
+    public static final ItemMapping AIR = new ItemMapping("minecraft:air", "minecraft:air", 0, 0, 0,
+            BlockRegistries.BLOCKS.forVersion(MinecraftProtocol.DEFAULT_BEDROCK_CODEC.getProtocolVersion()).getBedrockAirId(),
+            64, null, null, null, 0, null, false);
 
+    String javaIdentifier;
     String bedrockIdentifier;
-    ItemDefinition bedrockDefinition;
+    int javaId;
+    int bedrockId;
     int bedrockData;
 
     /**
      * The Bedrock block runtime ID to render this item with. The specific state *does* matter in how this item is rendered and used as a crafting ingredient.
      * Required since 1.16.220.
      */
-    BlockDefinition bedrockBlockDefinition;
+    int bedrockBlockId;
+    int stackSize;
 
     String toolType;
     String toolTier;
 
     String translationString;
 
-    @NonNull
-    List<Pair<CustomItemOptions, ItemDefinition>> customItemOptions;
+    int maxDamage;
 
-    @NonNull
-    Item javaItem;
+    Set<String> repairMaterials;
+
+    boolean hasSuspiciousStewEffect;
 
     /**
      * Gets if this item is a block.
@@ -82,7 +71,7 @@ public class ItemMapping {
      * @return if this item is a block
      */
     public boolean isBlock() {
-        return this.bedrockBlockDefinition != null;
+        return this.bedrockBlockId != -1;
     }
 
     /**

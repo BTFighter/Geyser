@@ -26,33 +26,24 @@
 package org.geysermc.geyser.registry.type;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
-import lombok.With;
+import lombok.Data;
+
+import java.util.List;
 
 /**
  * Represents Geyser's own serialized item information before being processed per-version
  */
-@ToString
-@EqualsAndHashCode
-@Getter
-@Setter
-@With
-@NoArgsConstructor
-@AllArgsConstructor
+@Data
 public class GeyserMappingItem {
     @JsonProperty("bedrock_identifier") String bedrockIdentifier;
     @JsonProperty("bedrock_data") int bedrockData;
     Integer firstBlockRuntimeId;
     Integer lastBlockRuntimeId;
+    @JsonProperty("stack_size") int stackSize = 64;
     @JsonProperty("tool_type") String toolType;
     @JsonProperty("tool_tier") String toolTier;
-    @JsonProperty("armor_type") String armorType;
-    @JsonProperty("protection_value") int protectionValue;
-    @JsonProperty("is_edible") boolean edible = false;
-    @JsonProperty("is_entity_placer") boolean entityPlacer = false;
+    @JsonProperty("max_damage") int maxDamage = 0;
+    @JsonProperty("repair_materials") List<String> repairMaterials;
+    @JsonProperty("has_suspicious_stew_effect") boolean hasSuspiciousStewEffect = false;
+    @JsonProperty("dye_color") int dyeColor = -1;
 }

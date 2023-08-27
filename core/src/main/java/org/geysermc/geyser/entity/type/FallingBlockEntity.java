@@ -26,9 +26,9 @@
 package org.geysermc.geyser.entity.type;
 
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
-import org.cloudburstmc.math.vector.Vector3f;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
+import com.nukkitx.math.vector.Vector3f;
+import com.nukkitx.protocol.bedrock.data.entity.EntityData;
+import com.nukkitx.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.EntityDefinitions;
 import org.geysermc.geyser.session.GeyserSession;
 
@@ -36,10 +36,10 @@ import java.util.UUID;
 
 public class FallingBlockEntity extends Entity {
 
-    public FallingBlockEntity(GeyserSession session, int entityId, long geyserId, UUID uuid, Vector3f position, Vector3f motion, float yaw, float pitch, float headYaw, int javaId) {
-        super(session, entityId, geyserId, uuid, EntityDefinitions.FALLING_BLOCK, position, motion, yaw, pitch, headYaw);
+    public FallingBlockEntity(GeyserSession session, int entityId, long geyserId, UUID uuid, Vector3f position, Vector3f motion, float yaw, float pitch, int javaId) {
+        super(session, entityId, geyserId, uuid, EntityDefinitions.FALLING_BLOCK, position, motion, yaw, pitch, 0f);
 
-        this.dirtyMetadata.put(EntityDataTypes.BLOCK, session.getBlockMappings().getBedrockBlock(javaId));
+        this.dirtyMetadata.put(EntityData.VARIANT, session.getBlockMappings().getBedrockBlockId(javaId));
     }
 
     @Override

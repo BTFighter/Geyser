@@ -26,10 +26,10 @@
 package org.geysermc.geyser.entity.type;
 
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.type.IntEntityMetadata;
-import org.cloudburstmc.math.vector.Vector3f;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
-import org.cloudburstmc.protocol.bedrock.packet.SetEntityDataPacket;
+import com.nukkitx.math.vector.Vector3f;
+import com.nukkitx.protocol.bedrock.data.entity.EntityData;
+import com.nukkitx.protocol.bedrock.data.entity.EntityFlag;
+import com.nukkitx.protocol.bedrock.packet.SetEntityDataPacket;
 import org.geysermc.geyser.entity.EntityDefinition;
 import org.geysermc.geyser.session.GeyserSession;
 
@@ -43,9 +43,9 @@ public class TNTEntity extends Entity implements Tickable {
     }
 
     public void setFuseLength(IntEntityMetadata entityMetadata) {
-        currentTick = entityMetadata.getPrimitiveValue();
+        currentTick = ((IntEntityMetadata) entityMetadata).getPrimitiveValue();
         setFlag(EntityFlag.IGNITED, true);
-        dirtyMetadata.put(EntityDataTypes.FUSE_TIME, currentTick);
+        dirtyMetadata.put(EntityData.FUSE_LENGTH, currentTick);
     }
 
     @Override
@@ -56,11 +56,11 @@ public class TNTEntity extends Entity implements Tickable {
         }
 
         if (currentTick % 5 == 0) {
-            dirtyMetadata.put(EntityDataTypes.FUSE_TIME, currentTick);
+            dirtyMetadata.put(EntityData.FUSE_LENGTH, currentTick);
 
             SetEntityDataPacket packet = new SetEntityDataPacket();
             packet.setRuntimeEntityId(geyserId);
-            packet.getMetadata().put(EntityDataTypes.FUSE_TIME, currentTick);
+            packet.getMetadata().put(EntityData.FUSE_LENGTH, currentTick);
             session.sendUpstreamPacket(packet);
         }
         currentTick--;

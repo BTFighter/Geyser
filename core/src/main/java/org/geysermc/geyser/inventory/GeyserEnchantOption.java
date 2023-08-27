@@ -25,8 +25,8 @@
 
 package org.geysermc.geyser.inventory;
 
-import org.cloudburstmc.protocol.bedrock.data.inventory.EnchantData;
-import org.cloudburstmc.protocol.bedrock.data.inventory.EnchantOptionData;
+import com.nukkitx.protocol.bedrock.data.inventory.EnchantData;
+import com.nukkitx.protocol.bedrock.data.inventory.EnchantOptionData;
 import lombok.Getter;
 import org.geysermc.geyser.session.GeyserSession;
 
@@ -46,7 +46,7 @@ public class GeyserEnchantOption {
      */
     private static final List<String> ENCHANT_NAMES = Arrays.asList("tougher armor", "lukeeey", "fall better",
             "explode less", "camo toy", "breathe better", "rtm five one six", "armor stab", "water walk", "you are elsa",
-            "tim two zero three", "fast walk nether", "davchoo", "oof ouch owie", "enemy on fire", "spider sad", "aj ferguson", "redned",
+            "tim two zero three", "fast walk nether", "oof ouch owie", "enemy on fire", "spider sad", "aj ferguson", "redned",
             "more items thx", "long sword reach", "fast tool", "give me block", "less breaky break", "cube craft",
             "strong arrow", "fist arrow", "spicy arrow", "many many arrows", "geyser", "come here fish", "i like this",
             "stabby stab", "supreme mortal", "avatar i guess", "more arrows", "fly finder seventeen", "in and out",

@@ -29,49 +29,38 @@ import com.viaversion.viaversion.api.Via;
 import com.viaversion.viaversion.api.data.MappingData;
 import com.viaversion.viaversion.api.protocol.ProtocolPathEntry;
 import com.viaversion.viaversion.api.protocol.version.ProtocolVersion;
-import io.netty.buffer.ByteBuf;
 import me.lucko.commodore.CommodoreProvider;
 import org.bukkit.Bukkit;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.command.CommandMap;
 import org.bukkit.command.PluginCommand;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.server.ServerLoadEvent;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionDefault;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.geysermc.geyser.api.util.PlatformType;
+import org.geysermc.common.PlatformType;
 import org.geysermc.geyser.Constants;
 import org.geysermc.geyser.GeyserBootstrap;
 import org.geysermc.geyser.GeyserImpl;
 import org.geysermc.geyser.adapters.spigot.SpigotAdapters;
-import org.geysermc.geyser.api.command.Command;
-import org.geysermc.geyser.api.extension.Extension;
-import org.geysermc.geyser.command.GeyserCommandManager;
+import org.geysermc.geyser.command.CommandManager;
+import org.geysermc.geyser.command.GeyserCommand;
 import org.geysermc.geyser.configuration.GeyserConfiguration;
 import org.geysermc.geyser.dump.BootstrapDumpInfo;
 import org.geysermc.geyser.level.WorldManager;
-import org.geysermc.geyser.network.GameProtocol;
+import org.geysermc.geyser.network.MinecraftProtocol;
 import org.geysermc.geyser.ping.GeyserLegacyPingPassthrough;
 import org.geysermc.geyser.ping.IGeyserPingPassthrough;
 import org.geysermc.geyser.platform.spigot.command.GeyserBrigadierSupport;
 import org.geysermc.geyser.platform.spigot.command.GeyserSpigotCommandExecutor;
 import org.geysermc.geyser.platform.spigot.command.GeyserSpigotCommandManager;
+import org.geysermc.geyser.platform.spigot.command.SpigotCommandSender;
 import org.geysermc.geyser.platform.spigot.world.GeyserPistonListener;
 import org.geysermc.geyser.platform.spigot.world.GeyserSpigotBlockPlaceListener;
-import org.geysermc.geyser.platform.spigot.world.manager.GeyserSpigotLegacyNativeWorldManager;
-import org.geysermc.geyser.platform.spigot.world.manager.GeyserSpigotNativeWorldManager;
-import org.geysermc.geyser.platform.spigot.world.manager.GeyserSpigotWorldManager;
+import org.geysermc.geyser.platform.spigot.world.manager.*;
+import org.geysermc.geyser.session.auth.AuthType;
 import org.geysermc.geyser.text.GeyserLocale;
 import org.geysermc.geyser.util.FileUtils;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.net.SocketAddress;
 import java.nio.file.Path;
 import java.util.List;
@@ -100,39 +89,8 @@ public class GeyserSpigotPlugin extends JavaPlugin implements GeyserBootstrap {
     private String minecraftVersion;
 
     @Override
-    public void onLoad() {
+    public void onEnable() {
         GeyserLocale.init(this);
-
-        try {
-            // AvailableCommandsSerializer_v291 complains otherwise - affects at least 1.8
-            ByteBuf.class.getMethod("writeShortLE", int.class);
-            // Only available in 1.13.x
-            Class.forName("org.bukkit.event.server.ServerLoadEvent");
-            // We depend on this as a fallback in certain scenarios
-            BlockData.class.getMethod("getAsString");
-        } catch (ClassNotFoundException | NoSuchMethodException e) {
-            getLogger().severe("*********************************************");
-            getLogger().severe("");
-            getLogger().severe(GeyserLocale.getLocaleStringLog("geyser.bootstrap.unsupported_server.header"));
-            getLogger().severe(GeyserLocale.getLocaleStringLog("geyser.bootstrap.unsupported_server.message", "1.13.2"));
-            getLogger().severe("");
-            getLogger().severe("*********************************************");
-            return;
-        }
-
-        try {
-            Class.forName("net.md_5.bungee.chat.ComponentSerializer");
-        } catch (ClassNotFoundException e) {
-            if (!PaperAdventure.canSendMessageUsingComponent()) { // Prepare for Paper eventually removing Bungee chat
-                getLogger().severe("*********************************************");
-                getLogger().severe("");
-                getLogger().severe(GeyserLocale.getLocaleStringLog("geyser.bootstrap.unsupported_server_type.header", getServer().getName()));
-                getLogger().severe(GeyserLocale.getLocaleStringLog("geyser.bootstrap.unsupported_server_type.message", "Paper"));
-                getLogger().severe("");
-                getLogger().severe("*********************************************");
-                return;
-            }
-        }
 
         // This is manually done instead of using Bukkit methods to save the config because otherwise comments get removed
         try {
@@ -149,21 +107,39 @@ public class GeyserSpigotPlugin extends JavaPlugin implements GeyserBootstrap {
             return;
         }
 
-        this.geyserLogger = GeyserPaperLogger.supported() ? new GeyserPaperLogger(this, getLogger(), geyserConfig.isDebugMode())
-                : new GeyserSpigotLogger(getLogger(), geyserConfig.isDebugMode());
+        try {
+            // Required for the Cloudburst Network dependency to initialize.
+            Class.forName("io.netty.channel.kqueue.KQueue");
+        } catch (ClassNotFoundException e) {
+            // While we could support these older versions, the downside is not having KQueue working at all
+            // And since there are alternative ways to get Geyser working for these aging platforms, it's not worth it.
+            getLogger().severe("*********************************************");
+            getLogger().severe("");
+            getLogger().severe(GeyserLocale.getLocaleStringLog("geyser.bootstrap.unsupported_server.header"));
+            getLogger().severe(GeyserLocale.getLocaleStringLog("geyser.bootstrap.unsupported_server.message", "1.12.2"));
+            getLogger().severe("");
+            getLogger().severe("*********************************************");
 
-        GeyserConfiguration.checkGeyserConfiguration(geyserConfig, geyserLogger);
-
-        this.geyser = GeyserImpl.load(PlatformType.SPIGOT, this);
-    }
-
-    @Override
-    public void onEnable() {
-        if (this.geyserConfig == null) {
-            // We failed to initialize correctly
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
+
+        // By default this should be localhost but may need to be changed in some circumstances
+        if (this.geyserConfig.getRemote().getAddress().equalsIgnoreCase("auto")) {
+            geyserConfig.setAutoconfiguredRemote(true);
+            // Don't use localhost if not listening on all interfaces
+            if (!Bukkit.getIp().equals("0.0.0.0") && !Bukkit.getIp().equals("")) {
+                geyserConfig.getRemote().setAddress(Bukkit.getIp());
+            }
+            geyserConfig.getRemote().setPort(Bukkit.getPort());
+        }
+
+        if (geyserConfig.getBedrock().isCloneRemotePort()) {
+            geyserConfig.getBedrock().setPort(Bukkit.getPort());
+        }
+
+        this.geyserLogger = new GeyserSpigotLogger(getLogger(), geyserConfig.isDebugMode());
+        GeyserConfiguration.checkGeyserConfiguration(geyserConfig, geyserLogger);
 
         // Remove this in like a year
         if (Bukkit.getPluginManager().getPlugin("floodgate-bukkit") != null) {
@@ -172,65 +148,30 @@ public class GeyserSpigotPlugin extends JavaPlugin implements GeyserBootstrap {
             return;
         }
 
-        this.geyserCommandManager = new GeyserSpigotCommandManager(geyser);
-        this.geyserCommandManager.init();
-
-        if (!INITIALIZED) {
-            // Needs to be an anonymous inner class otherwise Bukkit complains about missing classes
-            Bukkit.getPluginManager().registerEvents(new Listener() {
-
-                @EventHandler
-                public void onServerLoaded(ServerLoadEvent event) {
-                    // Wait until all plugins have loaded so Geyser can start
-                    postStartup();
-                }
-            }, this);
-
-            // Because Bukkit locks its command map upon startup, we need to
-            // add our plugin commands in onEnable, but populating the executor
-            // can happen at any time
-            CommandMap commandMap = GeyserSpigotCommandManager.getCommandMap();
-            for (Extension extension : this.geyserCommandManager.extensionCommands().keySet()) {
-                // Thanks again, Bukkit
-                try {
-                    Constructor<PluginCommand> constructor = PluginCommand.class.getDeclaredConstructor(String.class, Plugin.class);
-                    constructor.setAccessible(true);
-
-                    PluginCommand pluginCommand = constructor.newInstance(extension.description().id(), this);
-                    pluginCommand.setDescription("The main command for the " + extension.name() + " Geyser extension!");
-
-                    commandMap.register(extension.description().id(), "geyserext", pluginCommand);
-                } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException ex) {
-                    this.geyserLogger.error("Failed to construct PluginCommand for extension " + extension.description().name(), ex);
-                }
-            }
+        if (geyserConfig.getRemote().getAuthType() == AuthType.FLOODGATE && Bukkit.getPluginManager().getPlugin("floodgate") == null) {
+            geyserLogger.severe(GeyserLocale.getLocaleStringLog("geyser.bootstrap.floodgate.not_installed") + " " + GeyserLocale.getLocaleStringLog("geyser.bootstrap.floodgate.disabling"));
+            this.getPluginLoader().disablePlugin(this);
+            return;
+        } else if (geyserConfig.isAutoconfiguredRemote() && Bukkit.getPluginManager().getPlugin("floodgate") != null) {
+            // Floodgate installed means that the user wants Floodgate authentication
+            geyserLogger.debug("Auto-setting to Floodgate authentication.");
+            geyserConfig.getRemote().setAuthType(AuthType.FLOODGATE);
         }
 
-        if (INITIALIZED) {
-            // Reload; continue with post startup
-            postStartup();
-        }
-    }
-
-    private void postStartup() {
-        GeyserImpl.start();
+        geyserConfig.loadFloodgate(this);
 
         // Turn "(MC: 1.16.4)" into 1.16.4.
         this.minecraftVersion = Bukkit.getServer().getVersion().split("\\(MC: ")[1].split("\\)")[0];
 
+        this.geyser = GeyserImpl.start(PlatformType.SPIGOT, this);
+
         if (geyserConfig.isLegacyPingPassthrough()) {
             this.geyserSpigotPingPassthrough = GeyserLegacyPingPassthrough.init(geyser);
         } else {
-            if (ReflectedNames.checkPaperPingEvent()) {
-                this.geyserSpigotPingPassthrough = new GeyserPaperPingPassthrough(geyserLogger);
-            } else if (ReflectedNames.newSpigotPingConstructorExists()) {
-                this.geyserSpigotPingPassthrough = new GeyserSpigotPingPassthrough(geyserLogger);
-            } else {
-                // Can't enable one of the other options
-                this.geyserSpigotPingPassthrough = GeyserLegacyPingPassthrough.init(geyser);
-            }
+            this.geyserSpigotPingPassthrough = new GeyserSpigotPingPassthrough(geyserLogger);
         }
-        geyserLogger.debug("Spigot ping passthrough type: " + (this.geyserSpigotPingPassthrough == null ? null : this.geyserSpigotPingPassthrough.getClass()));
+
+        this.geyserCommandManager = new GeyserSpigotCommandManager(geyser);
 
         boolean isViaVersion = Bukkit.getPluginManager().getPlugin("ViaVersion") != null;
         if (isViaVersion) {
@@ -245,6 +186,14 @@ public class GeyserSpigotPlugin extends JavaPlugin implements GeyserBootstrap {
                 }
             }
         }
+        // Used to determine if Block.getBlockData() is present.
+        boolean isLegacy = !isCompatible(Bukkit.getServer().getVersion(), "1.13.0");
+        if (isLegacy)
+            geyserLogger.debug("Legacy version of Minecraft (1.12.2 or older) detected; falling back to ViaVersion for block state retrieval.");
+
+        boolean isPre1_12 = !isCompatible(Bukkit.getServer().getVersion(), "1.12.0");
+        // Set if we need to use a different method for getting a player's locale
+        SpigotCommandSender.setUseLegacyLocaleMethod(isPre1_12);
 
         // We want to do this late in the server startup process to allow plugins such as ViaVersion and ProtocolLib
         // To do their job injecting, then connect into *that*
@@ -257,7 +206,13 @@ public class GeyserSpigotPlugin extends JavaPlugin implements GeyserBootstrap {
                 String nmsVersion = name.substring(name.lastIndexOf('.') + 1);
                 SpigotAdapters.registerWorldAdapter(nmsVersion);
                 if (isViaVersion && isViaVersionNeeded()) {
-                    this.geyserWorldManager = new GeyserSpigotLegacyNativeWorldManager(this);
+                    if (isLegacy) {
+                        // Pre-1.13
+                        this.geyserWorldManager = new GeyserSpigot1_12NativeWorldManager(this);
+                    } else {
+                        // Post-1.13
+                        this.geyserWorldManager = new GeyserSpigotLegacyNativeWorldManager(this);
+                    }
                 } else {
                     // No ViaVersion
                     this.geyserWorldManager = new GeyserSpigotNativeWorldManager(this);
@@ -274,77 +229,48 @@ public class GeyserSpigotPlugin extends JavaPlugin implements GeyserBootstrap {
         }
         if (this.geyserWorldManager == null) {
             // No NMS adapter
-            this.geyserWorldManager = new GeyserSpigotWorldManager(this);
-            geyserLogger.debug("Using default world manager.");
+            if (isLegacy && isViaVersion) {
+                // Use ViaVersion for converting pre-1.13 block states
+                this.geyserWorldManager = new GeyserSpigot1_12WorldManager(this);
+            } else if (isLegacy) {
+                // Not sure how this happens - without ViaVersion, we don't know any block states, so just assume everything is air
+                this.geyserWorldManager = new GeyserSpigotFallbackWorldManager(this);
+            } else {
+                // Post-1.13
+                this.geyserWorldManager = new GeyserSpigotWorldManager(this);
+            }
+            geyserLogger.debug("Using default world manager: " + this.geyserWorldManager.getClass());
         }
 
-        PluginCommand geyserCommand = this.getCommand("geyser");
-        geyserCommand.setExecutor(new GeyserSpigotCommandExecutor(geyser, geyserCommandManager.getCommands()));
-
-        for (Map.Entry<Extension, Map<String, Command>> entry : this.geyserCommandManager.extensionCommands().entrySet()) {
-            Map<String, Command> commands = entry.getValue();
-            if (commands.isEmpty()) {
-                continue;
-            }
-
-            PluginCommand command = this.getCommand(entry.getKey().description().id());
-            if (command == null) {
-                continue;
-            }
-
-            command.setExecutor(new GeyserSpigotCommandExecutor(this.geyser, commands));
-        }
+        PluginCommand pluginCommand = this.getCommand("geyser");
+        pluginCommand.setExecutor(new GeyserSpigotCommandExecutor(geyser));
 
         if (!INITIALIZED) {
             // Register permissions so they appear in, for example, LuckPerms' UI
             // Re-registering permissions throws an error
-            for (Map.Entry<String, Command> entry : geyserCommandManager.commands().entrySet()) {
-                Command command = entry.getValue();
-                if (command.aliases().contains(entry.getKey())) {
+            for (Map.Entry<String, GeyserCommand> entry : geyserCommandManager.getCommands().entrySet()) {
+                GeyserCommand command = entry.getValue();
+                if (command.getAliases().contains(entry.getKey())) {
                     // Don't register aliases
                     continue;
                 }
 
-                Bukkit.getPluginManager().addPermission(new Permission(command.permission(),
-                        GeyserLocale.getLocaleStringLog(command.description()),
+                Bukkit.getPluginManager().addPermission(new Permission(command.getPermission(),
+                        GeyserLocale.getLocaleStringLog(command.getDescription()),
                         command.isSuggestedOpOnly() ? PermissionDefault.OP : PermissionDefault.TRUE));
             }
-
-            // Register permissions for extension commands
-            for (Map.Entry<Extension, Map<String, Command>> commandEntry : this.geyserCommandManager.extensionCommands().entrySet()) {
-                for (Map.Entry<String, Command> entry : commandEntry.getValue().entrySet()) {
-                    Command command = entry.getValue();
-                    if (command.aliases().contains(entry.getKey())) {
-                        // Don't register aliases
-                        continue;
-                    }
-
-                    if (command.permission().isBlank()) {
-                        continue;
-                    }
-
-                    Bukkit.getPluginManager().addPermission(new Permission(command.permission(),
-                            GeyserLocale.getLocaleStringLog(command.description()),
-                            command.isSuggestedOpOnly() ? PermissionDefault.OP : PermissionDefault.TRUE));
-                }
-            }
-
-            Bukkit.getPluginManager().addPermission(new Permission(Constants.UPDATE_PERMISSION,
-                    "Whether update notifications can be seen", PermissionDefault.OP));
 
             // Events cannot be unregistered - re-registering results in duplicate firings
             GeyserSpigotBlockPlaceListener blockPlaceListener = new GeyserSpigotBlockPlaceListener(geyser, this.geyserWorldManager);
             Bukkit.getServer().getPluginManager().registerEvents(blockPlaceListener, this);
 
             Bukkit.getServer().getPluginManager().registerEvents(new GeyserPistonListener(geyser, this.geyserWorldManager), this);
-
-            Bukkit.getServer().getPluginManager().registerEvents(new GeyserSpigotUpdateListener(), this);
         }
 
         boolean brigadierSupported = CommodoreProvider.isSupported();
         geyserLogger.debug("Brigadier supported? " + brigadierSupported);
         if (brigadierSupported) {
-            GeyserBrigadierSupport.loadBrigadier(this, geyserCommand);
+            GeyserBrigadierSupport.loadBrigadier(this, pluginCommand);
         }
 
         // Check to ensure the current setup can support the protocol version Geyser uses
@@ -374,7 +300,7 @@ public class GeyserSpigotPlugin extends JavaPlugin implements GeyserBootstrap {
     }
 
     @Override
-    public GeyserCommandManager getGeyserCommandManager() {
+    public CommandManager getGeyserCommandManager() {
         return this.geyserCommandManager;
     }
 
@@ -408,6 +334,40 @@ public class GeyserSpigotPlugin extends JavaPlugin implements GeyserBootstrap {
         return this.geyserInjector.getServerSocketAddress();
     }
 
+    public boolean isCompatible(String version, String whichVersion) {
+        int[] currentVersion = parseVersion(version);
+        int[] otherVersion = parseVersion(whichVersion);
+        int length = Math.max(currentVersion.length, otherVersion.length);
+        for (int index = 0; index < length; index = index + 1) {
+            int self = (index < currentVersion.length) ? currentVersion[index] : 0;
+            int other = (index < otherVersion.length) ? otherVersion[index] : 0;
+
+            if (self != other) {
+                return (self - other) > 0;
+            }
+        }
+        return true;
+    }
+
+    private int[] parseVersion(String versionParam) {
+        versionParam = (versionParam == null) ? "" : versionParam;
+        if (versionParam.contains("(MC: ")) {
+            versionParam = versionParam.split("\\(MC: ")[1];
+            versionParam = versionParam.split("\\)")[0];
+        }
+        String[] stringArray = versionParam.split("[_.-]");
+        int[] temp = new int[stringArray.length];
+        for (int index = 0; index <= (stringArray.length - 1); index = index + 1) {
+            String t = stringArray[index].replaceAll("\\D", "");
+            try {
+                temp[index] = Integer.parseInt(t);
+            } catch (NumberFormatException ex) {
+                temp[index] = 0;
+            }
+        }
+        return temp;
+    }
+
     /**
      * @return the server version before ViaVersion finishes initializing
      */
@@ -422,7 +382,7 @@ public class GeyserSpigotPlugin extends JavaPlugin implements GeyserBootstrap {
      */
     private boolean isViaVersionNeeded() {
         ProtocolVersion serverVersion = getServerProtocolVersion();
-        List<ProtocolPathEntry> protocolList = Via.getManager().getProtocolManager().getProtocolPath(GameProtocol.getJavaProtocolVersion(),
+        List<ProtocolPathEntry> protocolList = Via.getManager().getProtocolManager().getProtocolPath(MinecraftProtocol.getJavaProtocolVersion(),
                 serverVersion.getVersion());
         if (protocolList == null) {
             // No translation needed!
@@ -435,26 +395,6 @@ public class GeyserSpigotPlugin extends JavaPlugin implements GeyserBootstrap {
             }
         }
         // All mapping data is null, which means client and server block states are the same
-        return false;
-    }
-
-    @NotNull
-    @Override
-    public String getServerBindAddress() {
-        return Bukkit.getIp();
-    }
-
-    @Override
-    public int getServerPort() {
-        return Bukkit.getPort();
-    }
-
-    @Override
-    public boolean testFloodgatePluginPresent() {
-        if (Bukkit.getPluginManager().getPlugin("floodgate") != null) {
-            geyserConfig.loadFloodgate(this);
-            return true;
-        }
         return false;
     }
 }

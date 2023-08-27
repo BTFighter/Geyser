@@ -115,14 +115,10 @@ public class GeyserSpigotInjector extends GeyserInjector {
 
         ChannelFuture channelFuture = (new ServerBootstrap()
                 .channel(LocalServerChannelWrapper.class)
-                .childHandler(new ChannelInitializer<>() {
+                .childHandler(new ChannelInitializer<Channel>() {
                     @Override
                     protected void initChannel(Channel ch) throws Exception {
                         initChannel.invoke(childHandler, ch);
-
-                        if (bootstrap.getGeyserConfig().isDisableCompression() && GeyserSpigotCompressionDisabler.ENABLED) {
-                            ch.pipeline().addAfter("encoder", "geyser-compression-disabler", new GeyserSpigotCompressionDisabler());
-                        }
                     }
                 })
                 // Set to MAX_PRIORITY as MultithreadEventLoopGroup#newDefaultThreadFactory which DefaultEventLoopGroup implements does by default
@@ -173,10 +169,9 @@ public class GeyserSpigotInjector extends GeyserInjector {
      * For the future, if someone wants to properly fix this - as of December 28, 2021, it happens on 1.16.5/1.17.1/1.18.1 EXCEPT Spigot 1.16.5
      */
     private void workAroundWeirdBug(GeyserBootstrap bootstrap) {
-        MinecraftProtocol protocol = new MinecraftProtocol();
-        LocalSession session = new LocalSession(bootstrap.getGeyserConfig().getRemote().address(),
-                bootstrap.getGeyserConfig().getRemote().port(), this.serverSocketAddress,
-                InetAddress.getLoopbackAddress().getHostAddress(), protocol, protocol.createHelper());
+        LocalSession session = new LocalSession(bootstrap.getGeyserConfig().getRemote().getAddress(),
+                bootstrap.getGeyserConfig().getRemote().getPort(), this.serverSocketAddress,
+                InetAddress.getLoopbackAddress().getHostAddress(), new MinecraftProtocol());
         session.connect();
     }
 

@@ -27,45 +27,35 @@ package org.geysermc.geyser.platform.sponge;
 
 import lombok.Getter;
 import org.geysermc.geyser.dump.BootstrapDumpInfo;
-import org.geysermc.geyser.text.AsteriskSerializer;
 import org.spongepowered.api.Platform;
 import org.spongepowered.api.Sponge;
-import org.spongepowered.plugin.PluginContainer;
-import org.spongepowered.plugin.metadata.PluginMetadata;
-import org.spongepowered.plugin.metadata.model.PluginContributor;
+import org.spongepowered.api.plugin.PluginContainer;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Getter
 public class GeyserSpongeDumpInfo extends BootstrapDumpInfo {
     private final String platformName;
     private final String platformVersion;
     private final boolean onlineMode;
-
-    @AsteriskSerializer.Asterisk(isIp = true)
     private final String serverIP;
     private final int serverPort;
     private final List<PluginInfo> plugins;
 
     GeyserSpongeDumpInfo() {
-        PluginContainer container = Sponge.platform().container(Platform.Component.IMPLEMENTATION);
-        PluginMetadata platformMeta = container.metadata();
-        this.platformName = platformMeta.name().orElse("unknown");
-        this.platformVersion = platformMeta.version().getQualifier();
-        this.onlineMode = Sponge.server().isOnlineModeEnabled();
-        Optional<InetSocketAddress> socketAddress = Sponge.server().boundAddress();
-        this.serverIP = socketAddress.map(InetSocketAddress::getHostString).orElse("unknown");
-        this.serverPort = socketAddress.map(InetSocketAddress::getPort).orElse(-1);
+        super();
+        PluginContainer container = Sponge.getPlatform().getContainer(Platform.Component.IMPLEMENTATION);
+        this.platformName = container.getName();
+        this.platformVersion = container.getVersion().get();
+        this.onlineMode = Sponge.getServer().getOnlineMode();
+        this.serverIP = Sponge.getServer().getBoundAddress().get().getHostString();
+        this.serverPort = Sponge.getServer().getBoundAddress().get().getPort();
         this.plugins = new ArrayList<>();
 
-        for (PluginContainer plugin : Sponge.pluginManager().plugins()) {
-            PluginMetadata meta = plugin.metadata();
-            List<String> contributors = meta.contributors().stream().map(PluginContributor::name).collect(Collectors.toList());
-            this.plugins.add(new PluginInfo(true, meta.name().orElse("unknown"), meta.version().toString(), meta.entrypoint(), contributors));
+        for (PluginContainer plugin : Sponge.getPluginManager().getPlugins()) {
+            String pluginClass = plugin.getInstance().map((pl) -> pl.getClass().getName()).orElse("unknown");
+            this.plugins.add(new PluginInfo(true, plugin.getName(), plugin.getVersion().get(), pluginClass, plugin.getAuthors()));
         }
     }
 }

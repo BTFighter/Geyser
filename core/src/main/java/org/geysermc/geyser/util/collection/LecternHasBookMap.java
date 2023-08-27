@@ -25,11 +25,11 @@
 
 package org.geysermc.geyser.util.collection;
 
-import org.cloudburstmc.math.vector.Vector3i;
-import org.cloudburstmc.nbt.NbtMap;
-import org.geysermc.erosion.util.LecternUtils;
-import org.geysermc.geyser.level.WorldManager;
+import com.nukkitx.math.vector.Vector3i;
+import com.nukkitx.nbt.NbtMap;
 import org.geysermc.geyser.session.GeyserSession;
+import org.geysermc.geyser.translator.inventory.LecternInventoryTranslator;
+import org.geysermc.geyser.level.WorldManager;
 import org.geysermc.geyser.util.BlockEntityUtils;
 
 /**
@@ -47,24 +47,27 @@ public class LecternHasBookMap extends FixedInt2BooleanMap {
         int offset = blockState - this.start;
         if (offset < 0 || offset >= this.value.length) {
             // Block state is out of bounds of this map - lectern has been destroyed, if it existed
-            if (!worldManager.shouldExpectLecternHandled(session)) {
+            if (!worldManager.shouldExpectLecternHandled()) {
                 session.getLecternCache().remove(position);
             }
             return;
         }
 
         boolean newLecternHasBook;
-        if (worldManager.shouldExpectLecternHandled(session)) {
-            worldManager.sendLecternData(session, position.getX(), position.getY(), position.getZ());
+        if (worldManager.shouldExpectLecternHandled()) {
+            // As of right now, no tag can be added asynchronously
+            worldManager.getLecternDataAt(session, position.getX(), position.getY(), position.getZ(), false);
         } else if ((newLecternHasBook = this.value[offset]) != this.get(worldManager.getBlockAt(session, position))) {
+            // If the lectern block was updated, or it previously had a book
+            NbtMap newLecternTag;
             // newLecternHasBook = the new lectern block state's "has book" toggle.
             if (newLecternHasBook) {
-                worldManager.sendLecternData(session, position.getX(), position.getY(), position.getZ());
+                newLecternTag = worldManager.getLecternDataAt(session, position.getX(), position.getY(), position.getZ(), false);
             } else {
                 session.getLecternCache().remove(position);
-                NbtMap newLecternTag = LecternUtils.getBaseLecternTag(position.getX(), position.getY(), position.getZ(), 0).build();
-                BlockEntityUtils.updateBlockEntity(session, newLecternTag, position);
+                newLecternTag = LecternInventoryTranslator.getBaseLecternTag(position.getX(), position.getY(), position.getZ(), 0).build();
             }
+            BlockEntityUtils.updateBlockEntity(session, newLecternTag, position);
         }
     }
 }

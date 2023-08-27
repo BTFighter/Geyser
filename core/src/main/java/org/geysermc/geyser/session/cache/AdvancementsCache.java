@@ -37,7 +37,6 @@ import org.geysermc.geyser.text.GeyserLocale;
 import org.geysermc.geyser.text.MinecraftLocale;
 import org.geysermc.geyser.translator.text.MessageTranslator;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -73,23 +72,36 @@ public class AdvancementsCache {
     public void buildAndShowMenuForm() {
         SimpleForm.Builder builder =
                 SimpleForm.builder()
-                        .translator(MinecraftLocale::getLocaleString, session.locale())
+                        .translator(MinecraftLocale::getLocaleString, session.getLocale())
                         .title("gui.advancements");
 
-        List<String> rootAdvancementIds = new ArrayList<>();
+        boolean hasAdvancements = false;
         for (Map.Entry<String, GeyserAdvancement> advancement : storedAdvancements.entrySet()) {
             if (advancement.getValue().getParentId() == null) { // No parent means this is a root advancement
-                builder.button(MessageTranslator.convertMessage(advancement.getValue().getDisplayData().getTitle(), session.locale()));
-                rootAdvancementIds.add(advancement.getKey());
+                hasAdvancements = true;
+                builder.button(MessageTranslator.convertMessage(advancement.getValue().getDisplayData().getTitle(), session.getLocale()));
             }
         }
 
-        if (rootAdvancementIds.isEmpty()) {
+        if (!hasAdvancements) {
             builder.content("advancements.empty");
         }
 
         builder.validResultHandler((response) -> {
-            String id = rootAdvancementIds.get(response.clickedButtonId());
+            String id = "";
+
+            int advancementIndex = 0;
+            for (Map.Entry<String, GeyserAdvancement> advancement : storedAdvancements.entrySet()) {
+                if (advancement.getValue().getParentId() == null) { // Root advancement
+                    if (advancementIndex == response.clickedButtonId()) {
+                        id = advancement.getKey();
+                        break;
+                    } else {
+                        advancementIndex++;
+                    }
+                }
+            }
+
             if (!id.equals("")) {
                 if (id.equals(currentAdvancementCategoryId)) {
                     // The server thinks we are already on this tab
@@ -111,23 +123,19 @@ public class AdvancementsCache {
      */
     public void buildAndShowListForm() {
         GeyserAdvancement categoryAdvancement = storedAdvancements.get(currentAdvancementCategoryId);
-        String language = session.locale();
+        String language = session.getLocale();
 
         SimpleForm.Builder builder =
                 SimpleForm.builder()
                         .title(MessageTranslator.convertMessage(categoryAdvancement.getDisplayData().getTitle(), language))
                         .content(MessageTranslator.convertMessage(categoryAdvancement.getDisplayData().getDescription(), language));
 
-        List<GeyserAdvancement> visibleAdvancements = new ArrayList<>();
         if (currentAdvancementCategoryId != null) {
             for (GeyserAdvancement advancement : storedAdvancements.values()) {
-                boolean earned = isEarned(advancement);
-                if (earned || !advancement.getDisplayData().isHidden()) {
+                if (advancement != null) {
                     if (advancement.getParentId() != null && currentAdvancementCategoryId.equals(advancement.getRootId(this))) {
-                        String color = earned ? advancement.getDisplayColor() : "";
-                        builder.button(color + MessageTranslator.convertMessage(advancement.getDisplayData().getTitle()) + '\n');
-
-                        visibleAdvancements.add(advancement);
+                        boolean color = isEarned(advancement) || !advancement.getDisplayData().isShowToast();
+                        builder.button((color ? ChatColor.DARK_GREEN : "") + MessageTranslator.convertMessage(advancement.getDisplayData().getTitle()) + '\n');
                     }
                 }
             }
@@ -140,8 +148,22 @@ public class AdvancementsCache {
             session.sendDownstreamPacket(new ServerboundSeenAdvancementsPacket());
 
         }).validResultHandler((response) -> {
-            if (response.getClickedButtonId() < visibleAdvancements.size()) {
-                GeyserAdvancement advancement = visibleAdvancements.get(response.clickedButtonId());
+            GeyserAdvancement advancement = null;
+            int advancementIndex = 0;
+            // Loop around to find the advancement that the client pressed
+            for (GeyserAdvancement advancementEntry : storedAdvancements.values()) {
+                if (advancementEntry.getParentId() != null &&
+                        currentAdvancementCategoryId.equals(advancementEntry.getRootId(this))) {
+                    if (advancementIndex == response.clickedButtonId()) {
+                        advancement = advancementEntry;
+                        break;
+                    } else {
+                        advancementIndex++;
+                    }
+                }
+            }
+
+            if (advancement != null) {
                 buildAndShowInfoForm(advancement);
             } else {
                 buildAndShowMenuForm();
@@ -160,7 +182,7 @@ public class AdvancementsCache {
      */
     public void buildAndShowInfoForm(GeyserAdvancement advancement) {
         // Cache language for easier access
-        String language = session.locale();
+        String language = session.getLocale();
 
         String earned = isEarned(advancement) ? "yes" : "no";
 

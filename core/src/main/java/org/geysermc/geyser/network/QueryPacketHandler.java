@@ -91,10 +91,8 @@ public class QueryPacketHandler {
         switch (type) {
             case HANDSHAKE:
                 sendToken();
-                break;
             case STATISTICS:
                 sendQueryData();
-                break;
         }
     }
 
@@ -153,7 +151,7 @@ public class QueryPacketHandler {
             String[] javaMotd = MessageTranslator.convertMessageLenient(pingInfo.getDescription()).split("\n");
             motd = javaMotd[0].trim(); // First line of the motd.
         } else {
-            motd = geyser.getConfig().getBedrock().primaryMotd();
+            motd = geyser.getConfig().getBedrock().getMotd1();
         }
 
         // If passthrough player counts is enabled lets get players from the server
@@ -177,13 +175,13 @@ public class QueryPacketHandler {
         gameData.put("hostname", motd);
         gameData.put("gametype", "SMP");
         gameData.put("game_id", "MINECRAFT");
-        gameData.put("version", GeyserImpl.NAME + " (" + GeyserImpl.GIT_VERSION + ") " + GameProtocol.DEFAULT_BEDROCK_CODEC.getMinecraftVersion());
+        gameData.put("version", GeyserImpl.NAME + " (" + GeyserImpl.GIT_VERSION + ") " + MinecraftProtocol.DEFAULT_BEDROCK_CODEC.getMinecraftVersion());
         gameData.put("plugins", "");
         gameData.put("map", map);
         gameData.put("numplayers", currentPlayerCount);
         gameData.put("maxplayers", maxPlayerCount);
-        gameData.put("hostport", String.valueOf(geyser.getConfig().getBedrock().port()));
-        gameData.put("hostip", geyser.getConfig().getBedrock().address());
+        gameData.put("hostport", String.valueOf(geyser.getConfig().getBedrock().getPort()));
+        gameData.put("hostip", geyser.getConfig().getBedrock().getAddress());
 
         try {
             writeString(query, "GeyserMC");
@@ -257,7 +255,7 @@ public class QueryPacketHandler {
      * @param data packet data
      */
     private void sendPacket(ByteBuf data) {
-        // geyser.getBedrockServer().getRakNet().send(sender, data);
+        geyser.getBedrockServer().getRakNet().send(sender, data);
     }
 
     /**

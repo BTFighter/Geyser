@@ -129,14 +129,14 @@ public class FileUtils {
     /**
      * Calculate the SHA256 hash of a file
      *
-     * @param path Path to calculate the hash for
+     * @param file File to calculate the hash for
      * @return A byte[] representation of the hash
      */
-    public static byte[] calculateSHA256(Path path) {
+    public static byte[] calculateSHA256(File file) {
         byte[] sha256;
 
         try {
-            sha256 = MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(path));
+            sha256 = MessageDigest.getInstance("SHA-256").digest(readAllBytes(file));
         } catch (Exception e) {
             throw new RuntimeException("Could not calculate pack hash", e);
         }
@@ -147,19 +147,33 @@ public class FileUtils {
     /**
      * Calculate the SHA1 hash of a file
      *
-     * @param path Path to calculate the hash for
+     * @param file File to calculate the hash for
      * @return A byte[] representation of the hash
      */
-    public static byte[] calculateSHA1(Path path) {
+    public static byte[] calculateSHA1(File file) {
         byte[] sha1;
 
         try {
-            sha1 = MessageDigest.getInstance("SHA-1").digest(Files.readAllBytes(path));
+            sha1 = MessageDigest.getInstance("SHA-1").digest(readAllBytes(file));
         } catch (Exception e) {
             throw new RuntimeException("Could not calculate pack hash", e);
         }
 
         return sha1;
+    }
+
+    /**
+     * An android compatible version of {@link Files#readAllBytes}
+     *
+     * @param file File to read bytes of
+     * @return The byte array of the file
+     */
+    public static byte[] readAllBytes(File file) {
+        try (InputStream stream = new FileInputStream(file)) {
+            return stream.readAllBytes();
+        } catch (IOException e) {
+            throw new RuntimeException("Cannot read " + file);
+        }
     }
 
     /**
@@ -172,15 +186,6 @@ public class FileUtils {
         } catch (IOException e) {
             throw new RuntimeException("Error while trying to read internal input stream!", e);
         }
-    }
-
-    /**
-     * @param resource the internal resource to read off from
-     * 
-     * @return the contents decoded as a UTF-8 String
-     */
-    public static String readToString(String resource) {
-        return new String(readAllBytes(resource), StandardCharsets.UTF_8);
     }
 
     /**

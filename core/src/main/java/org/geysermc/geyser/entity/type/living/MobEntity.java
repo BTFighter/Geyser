@@ -27,15 +27,15 @@ package org.geysermc.geyser.entity.type.living;
 
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
 import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
+import com.nukkitx.math.vector.Vector3f;
+import com.nukkitx.protocol.bedrock.data.entity.EntityData;
+import com.nukkitx.protocol.bedrock.data.entity.EntityFlag;
 import lombok.Getter;
-import org.cloudburstmc.math.vector.Vector3f;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.EntityDefinition;
 import org.geysermc.geyser.entity.type.LivingEntity;
 import org.geysermc.geyser.inventory.GeyserItemStack;
-import org.geysermc.geyser.item.Items;
-import org.geysermc.geyser.item.type.SpawnEggItem;
+import org.geysermc.geyser.inventory.item.StoredItemMappings;
+import org.geysermc.geyser.registry.type.ItemMapping;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
@@ -67,7 +67,7 @@ public class MobEntity extends LivingEntity {
 
     public void setLeashHolderBedrockId(long bedrockId) {
         this.leashHolderBedrockId = bedrockId;
-        dirtyMetadata.put(EntityDataTypes.LEASH_HOLDER, bedrockId);
+        dirtyMetadata.put(EntityData.LEASH_HOLDER_EID, bedrockId);
     }
 
     @Override
@@ -79,17 +79,18 @@ public class MobEntity extends LivingEntity {
             return InteractiveTag.REMOVE_LEASH;
         } else {
             GeyserItemStack itemStack = session.getPlayerInventory().getItemInHand(hand);
-            if (itemStack.asItem() == Items.LEAD && canBeLeashed()) {
+            StoredItemMappings storedItems = session.getItemMappings().getStoredItems();
+            if (itemStack.getJavaId() == storedItems.lead() && canBeLeashed()) {
                 // We shall leash
                 return InteractiveTag.LEASH;
-            } else if (itemStack.asItem() == Items.NAME_TAG) {
+            } else if (itemStack.getJavaId() == storedItems.nameTag()) {
                 InteractionResult result = checkInteractWithNameTag(itemStack);
                 if (result.consumesAction()) {
                     return InteractiveTag.NAME;
                 }
             }
 
-            InteractiveTag tag = testMobInteraction(hand, itemStack);
+            InteractiveTag tag = testMobInteraction(itemStack);
             return tag != InteractiveTag.NONE ? tag : super.testInteraction(hand);
         }
     }
@@ -108,23 +109,25 @@ public class MobEntity extends LivingEntity {
             if (result.consumesAction()) {
                 return result;
             } else {
-                InteractionResult mobResult = mobInteract(hand, itemInHand);
+                InteractionResult mobResult = mobInteract(itemInHand);
                 return mobResult.consumesAction() ? mobResult : super.interact(hand);
             }
         }
     }
 
     private InteractionResult checkPriorityInteractions(GeyserItemStack itemInHand) {
-        if (itemInHand.asItem() == Items.LEAD && canBeLeashed()) {
+        StoredItemMappings storedItems = session.getItemMappings().getStoredItems();
+        if (itemInHand.getJavaId() == storedItems.lead() && canBeLeashed()) {
             // We shall leash
             return InteractionResult.SUCCESS;
-        } else if (itemInHand.asItem() == Items.NAME_TAG) {
+        } else if (itemInHand.getJavaId() == storedItems.nameTag()) {
             InteractionResult result = checkInteractWithNameTag(itemInHand);
             if (result.consumesAction()) {
                 return result;
             }
         } else {
-            if (itemInHand.asItem() instanceof SpawnEggItem) {
+            ItemMapping mapping = itemInHand.getMapping(session);
+            if (mapping.getJavaIdentifier().endsWith("_spawn_egg")) {
                 // Using the spawn egg on this entity to create a child
                 return InteractionResult.CONSUME;
             }
@@ -134,12 +137,12 @@ public class MobEntity extends LivingEntity {
     }
 
     @Nonnull
-    protected InteractiveTag testMobInteraction(@Nonnull Hand hand, @Nonnull GeyserItemStack itemInHand) {
+    protected InteractiveTag testMobInteraction(@Nonnull GeyserItemStack itemInHand) {
         return InteractiveTag.NONE;
     }
 
     @Nonnull
-    protected InteractionResult mobInteract(@Nonnull Hand hand, @Nonnull GeyserItemStack itemInHand) {
+    protected InteractionResult mobInteract(@Nonnull GeyserItemStack itemInHand) {
         return InteractionResult.PASS;
     }
 

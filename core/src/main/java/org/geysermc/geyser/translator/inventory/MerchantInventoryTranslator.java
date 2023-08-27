@@ -27,22 +27,27 @@ package org.geysermc.geyser.translator.inventory;
 
 import com.github.steveice10.mc.protocol.data.game.inventory.ContainerType;
 import com.github.steveice10.mc.protocol.packet.ingame.serverbound.inventory.ServerboundSelectTradePacket;
-import org.cloudburstmc.math.vector.Vector3f;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityLinkData;
-import org.cloudburstmc.protocol.bedrock.data.inventory.ContainerSlotType;
-import org.cloudburstmc.protocol.bedrock.data.inventory.itemstack.request.ItemStackRequest;
-import org.cloudburstmc.protocol.bedrock.data.inventory.itemstack.request.ItemStackRequestSlotData;
-import org.cloudburstmc.protocol.bedrock.data.inventory.itemstack.request.action.AutoCraftRecipeAction;
-import org.cloudburstmc.protocol.bedrock.data.inventory.itemstack.request.action.CraftRecipeAction;
-import org.cloudburstmc.protocol.bedrock.data.inventory.itemstack.response.ItemStackResponse;
-import org.cloudburstmc.protocol.bedrock.packet.SetEntityLinkPacket;
-import org.geysermc.geyser.entity.EntityDefinitions;
+import com.nukkitx.math.vector.Vector3f;
+import com.nukkitx.protocol.bedrock.data.entity.EntityData;
+import com.nukkitx.protocol.bedrock.data.entity.EntityLinkData;
+import com.nukkitx.protocol.bedrock.data.inventory.ContainerSlotType;
+import com.nukkitx.protocol.bedrock.data.inventory.ItemStackRequest;
+import com.nukkitx.protocol.bedrock.data.inventory.StackRequestSlotInfoData;
+import com.nukkitx.protocol.bedrock.data.inventory.stackrequestactions.AutoCraftRecipeStackRequestActionData;
+import com.nukkitx.protocol.bedrock.data.inventory.stackrequestactions.CraftRecipeStackRequestActionData;
+import com.nukkitx.protocol.bedrock.packet.ItemStackResponsePacket;
+import com.nukkitx.protocol.bedrock.packet.SetEntityLinkPacket;
+import com.nukkitx.protocol.bedrock.v486.Bedrock_v486;
 import org.geysermc.geyser.entity.type.Entity;
-import org.geysermc.geyser.inventory.*;
+import org.geysermc.geyser.entity.EntityDefinitions;
+import org.geysermc.geyser.inventory.Inventory;
+import org.geysermc.geyser.inventory.MerchantContainer;
+import org.geysermc.geyser.inventory.PlayerInventory;
+import org.geysermc.geyser.session.GeyserSession;
+import org.geysermc.geyser.inventory.BedrockContainerSlot;
+import org.geysermc.geyser.inventory.SlotType;
 import org.geysermc.geyser.inventory.updater.InventoryUpdater;
 import org.geysermc.geyser.inventory.updater.UIInventoryUpdater;
-import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.util.InventoryUtils;
 
 import java.util.concurrent.TimeUnit;
@@ -68,19 +73,19 @@ public class MerchantInventoryTranslator extends BaseInventoryTranslator {
     @Override
     public BedrockContainerSlot javaSlotToBedrockContainer(int slot) {
         return switch (slot) {
-            case 0 -> new BedrockContainerSlot(ContainerSlotType.TRADE2_INGREDIENT_1, 4);
-            case 1 -> new BedrockContainerSlot(ContainerSlotType.TRADE2_INGREDIENT_2, 5);
+            case 0 -> new BedrockContainerSlot(ContainerSlotType.TRADE2_INGREDIENT1, 4);
+            case 1 -> new BedrockContainerSlot(ContainerSlotType.TRADE2_INGREDIENT2, 5);
             case 2 -> new BedrockContainerSlot(ContainerSlotType.TRADE2_RESULT, 50);
             default -> super.javaSlotToBedrockContainer(slot);
         };
     }
 
     @Override
-    public int bedrockSlotToJava(ItemStackRequestSlotData slotInfoData) {
+    public int bedrockSlotToJava(StackRequestSlotInfoData slotInfoData) {
         return switch (slotInfoData.getContainer()) {
-            case TRADE2_INGREDIENT_1 -> 0;
-            case TRADE2_INGREDIENT_2 -> 1;
-            case TRADE2_RESULT, CREATED_OUTPUT -> 2;
+            case TRADE2_INGREDIENT1 -> 0;
+            case TRADE2_INGREDIENT2 -> 1;
+            case TRADE2_RESULT, CREATIVE_OUTPUT -> 2;
             default -> super.bedrockSlotToJava(slotInfoData);
         };
     }
@@ -94,7 +99,7 @@ public class MerchantInventoryTranslator extends BaseInventoryTranslator {
     }
 
     @Override
-    public boolean prepareInventory(GeyserSession session, Inventory inventory) {
+    public void prepareInventory(GeyserSession session, Inventory inventory) {
         MerchantContainer merchantInventory = (MerchantContainer) inventory;
         if (merchantInventory.getVillager() == null) {
             long geyserId = session.getEntityCache().getNextEntityId().incrementAndGet();
@@ -103,9 +108,9 @@ public class MerchantInventoryTranslator extends BaseInventoryTranslator {
             Entity villager = new Entity(session, 0, geyserId, null, EntityDefinitions.VILLAGER, pos, Vector3f.ZERO, 0f, 0f, 0f) {
                 @Override
                 protected void initializeMetadata() {
-                    dirtyMetadata.put(EntityDataTypes.SCALE, 0f);
-                    dirtyMetadata.put(EntityDataTypes.WIDTH, 0f);
-                    dirtyMetadata.put(EntityDataTypes.HEIGHT, 0f);
+                    dirtyMetadata.put(EntityData.SCALE, 0f);
+                    dirtyMetadata.put(EntityData.BOUNDING_BOX_WIDTH, 0f);
+                    dirtyMetadata.put(EntityData.BOUNDING_BOX_HEIGHT, 0f);
                 }
             };
             villager.spawnEntity();
@@ -117,8 +122,6 @@ public class MerchantInventoryTranslator extends BaseInventoryTranslator {
 
             merchantInventory.setVillager(villager);
         }
-
-        return true;
     }
 
     @Override
@@ -136,28 +139,38 @@ public class MerchantInventoryTranslator extends BaseInventoryTranslator {
     }
 
     @Override
-    public ItemStackResponse translateCraftingRequest(GeyserSession session, Inventory inventory, ItemStackRequest request) {
+    public ItemStackResponsePacket.Response translateCraftingRequest(GeyserSession session, Inventory inventory, ItemStackRequest request) {
+        if (session.getUpstream().getProtocolVersion() < Bedrock_v486.V486_CODEC.getProtocolVersion()) {
+            return super.translateCraftingRequest(session, inventory, request);
+        }
+
         // Behavior as of 1.18.10.
         // We set the net ID to the trade index + 1. This doesn't appear to cause issues and means we don't have to
         // store a map of net ID to trade index on our end.
-        int tradeChoice = ((CraftRecipeAction) request.getActions()[0]).getRecipeNetworkId() - 1;
+        int tradeChoice = ((CraftRecipeStackRequestActionData) request.getActions()[0]).getRecipeNetworkId() - 1;
         return handleTrade(session, inventory, request, tradeChoice);
     }
 
     @Override
-    public ItemStackResponse translateAutoCraftingRequest(GeyserSession session, Inventory inventory, ItemStackRequest request) {
+    public ItemStackResponsePacket.Response translateAutoCraftingRequest(GeyserSession session, Inventory inventory, ItemStackRequest request) {
+        if (session.getUpstream().getProtocolVersion() < Bedrock_v486.V486_CODEC.getProtocolVersion()) {
+            // We're not crafting here
+            // Called at least by consoles when pressing a trade option button
+            return translateRequest(session, inventory, request);
+        }
+
         // 1.18.10 update - seems impossible to call without consoles/controller input
         // We set the net ID to the trade index + 1. This doesn't appear to cause issues and means we don't have to
         // store a map of net ID to trade index on our end.
-        int tradeChoice = ((AutoCraftRecipeAction) request.getActions()[0]).getRecipeNetworkId() - 1;
+        int tradeChoice = ((AutoCraftRecipeStackRequestActionData) request.getActions()[0]).getRecipeNetworkId() - 1;
         return handleTrade(session, inventory, request, tradeChoice);
     }
 
-    private ItemStackResponse handleTrade(GeyserSession session, Inventory inventory, ItemStackRequest request, int tradeChoice) {
+    private ItemStackResponsePacket.Response handleTrade(GeyserSession session, Inventory inventory, ItemStackRequest request, int tradeChoice) {
         ServerboundSelectTradePacket packet = new ServerboundSelectTradePacket(tradeChoice);
         session.sendDownstreamPacket(packet);
 
-        if (session.isEmulatePost1_13Logic()) {
+        if (session.isEmulatePost1_14Logic()) {
             // 1.18 Java cooperates nicer than older versions
             if (inventory instanceof MerchantContainer merchantInventory) {
                 merchantInventory.onTradeSelected(session, tradeChoice);

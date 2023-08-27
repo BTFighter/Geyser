@@ -27,23 +27,20 @@ package org.geysermc.geyser.entity.type.player;
 
 import com.github.steveice10.mc.protocol.data.game.entity.attribute.Attribute;
 import com.github.steveice10.mc.protocol.data.game.entity.attribute.AttributeType;
-import com.github.steveice10.mc.protocol.data.game.entity.metadata.GlobalPos;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.Pose;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
+import com.nukkitx.math.vector.Vector3f;
+import com.nukkitx.protocol.bedrock.data.AttributeData;
+import com.nukkitx.protocol.bedrock.data.entity.EntityData;
+import com.nukkitx.protocol.bedrock.data.entity.EntityFlag;
+import com.nukkitx.protocol.bedrock.packet.UpdateAttributesPacket;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import lombok.Getter;
-import org.cloudburstmc.math.vector.Vector3f;
-import org.cloudburstmc.protocol.bedrock.data.AttributeData;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
-import org.cloudburstmc.protocol.bedrock.packet.UpdateAttributesPacket;
 import org.geysermc.geyser.entity.attribute.GeyserAttributeType;
-import org.geysermc.geyser.item.Items;
+import org.geysermc.geyser.registry.type.ItemMapping;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.util.AttributeUtils;
-import org.geysermc.geyser.util.DimensionUtils;
 
-import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -67,16 +64,15 @@ public class SessionPlayerEntity extends PlayerEntity {
      */
     @Getter
     private boolean isRidingInFront;
+    /**
+     * Used for villager inventory emulation.
+     */
+    private int fakeTradeXp;
 
     public SessionPlayerEntity(GeyserSession session) {
-        super(session, -1, 1, null, Vector3f.ZERO, Vector3f.ZERO, 0, 0, 0, null, null);
+        super(session, -1, 1, UUID.randomUUID(), Vector3f.ZERO, Vector3f.ZERO, 0, 0, 0, "unknown", null);
 
         valid = true;
-    }
-
-    @Override
-    protected void setClientSideSilent() {
-        // Do nothing, since we want the session player to hear their own footstep sounds for example.
     }
 
     @Override
@@ -114,16 +110,6 @@ public class SessionPlayerEntity extends PlayerEntity {
         super.setFlags(entityMetadata);
         session.setSwimmingInWater((entityMetadata.getPrimitiveValue() & 0x10) == 0x10 && getFlag(EntityFlag.SPRINTING));
         refreshSpeed = true;
-    }
-
-    /**
-     * Since 1.19.40, the client must be re-informed of its bounding box on respawn
-     * See https://github.com/GeyserMC/Geyser/issues/3370
-     */
-    public void updateBoundingBox() {
-        dirtyMetadata.put(EntityDataTypes.HEIGHT, getBoundingBoxHeight());
-        dirtyMetadata.put(EntityDataTypes.WIDTH, getBoundingBoxWidth());
-        updateBedrockMetadata();
     }
 
     @Override
@@ -171,6 +157,11 @@ public class SessionPlayerEntity extends PlayerEntity {
         this.isRidingInFront = position != null && position.getX() > 0;
     }
 
+    public void addFakeTradeExperience(int tradeXp) {
+        fakeTradeXp += tradeXp;
+        dirtyMetadata.put(EntityData.TRADE_XP, fakeTradeXp);
+    }
+
     @Override
     public AttributeData createHealthAttribute() {
         // Max health must be divisible by two in bedrock
@@ -181,12 +172,12 @@ public class SessionPlayerEntity extends PlayerEntity {
     }
 
     @Override
-    protected boolean hasShield(boolean offhand) {
+    protected boolean hasShield(boolean offhand, ItemMapping shieldMapping) {
         // Must be overridden to point to the player's inventory cache
         if (offhand) {
-            return session.getPlayerInventory().getOffhand().asItem() == Items.SHIELD;
+            return session.getPlayerInventory().getOffhand().getJavaId() == shieldMapping.getJavaId();
         } else {
-            return session.getPlayerInventory().getItemInHand().asItem() == Items.SHIELD;
+            return session.getPlayerInventory().getItemInHand().getJavaId() == shieldMapping.getJavaId();
         }
     }
 
@@ -230,20 +221,5 @@ public class SessionPlayerEntity extends PlayerEntity {
 
         this.attributes.put(type, attributeData);
         return attributeData;
-    }
-
-    public void setLastDeathPosition(@Nullable GlobalPos pos) {
-        if (pos != null) {
-            dirtyMetadata.put(EntityDataTypes.PLAYER_LAST_DEATH_POS, pos.getPosition());
-            dirtyMetadata.put(EntityDataTypes.PLAYER_LAST_DEATH_DIMENSION, DimensionUtils.javaToBedrock(pos.getDimension()));
-            dirtyMetadata.put(EntityDataTypes.PLAYER_HAS_DIED, true);
-        } else {
-            dirtyMetadata.put(EntityDataTypes.PLAYER_HAS_DIED, false);
-        }
-    }
-
-    @Override
-    public UUID getTabListUuid() {
-        return session.getAuthData().uuid();
     }
 }

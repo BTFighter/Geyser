@@ -25,9 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living;
 
-import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
-import org.cloudburstmc.math.vector.Vector3f;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
+import com.nukkitx.math.vector.Vector3f;
+import com.nukkitx.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.EntityDefinition;
 import org.geysermc.geyser.inventory.GeyserItemStack;
 import org.geysermc.geyser.session.GeyserSession;
@@ -50,11 +49,11 @@ public class AbstractFishEntity extends WaterEntity {
 
     @Nonnull
     @Override
-    protected InteractionResult mobInteract(Hand hand, @Nonnull GeyserItemStack itemInHand) {
-        if (EntityUtils.attemptToBucket(itemInHand)) {
+    protected InteractionResult mobInteract(@Nonnull GeyserItemStack itemInHand) {
+        if (EntityUtils.attemptToBucket(session, itemInHand)) {
             return InteractionResult.SUCCESS;
         } else {
-            return super.mobInteract(hand, itemInHand);
+            return super.mobInteract(itemInHand);
         }
     }
 }

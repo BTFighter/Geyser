@@ -25,14 +25,14 @@
 
 package org.geysermc.geyser.entity.type.living.animal;
 
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.type.IntEntityMetadata;
-import org.cloudburstmc.math.vector.Vector3f;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
+import com.nukkitx.math.vector.Vector3f;
+import com.nukkitx.protocol.bedrock.data.entity.EntityData;
+import com.nukkitx.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.EntityDefinition;
-import org.geysermc.geyser.item.Items;
-import org.geysermc.geyser.item.type.Item;
 import org.geysermc.geyser.session.GeyserSession;
+import org.geysermc.geyser.registry.type.ItemMapping;
 
 import java.util.UUID;
 
@@ -40,6 +40,11 @@ public class RabbitEntity extends AnimalEntity {
 
     public RabbitEntity(GeyserSession session, int entityId, long geyserId, UUID uuid, EntityDefinition<?> definition, Vector3f position, Vector3f motion, float yaw, float pitch, float headYaw) {
         super(session, entityId, geyserId, uuid, definition, position, motion, yaw, pitch, headYaw);
+    }
+
+    @Override
+    public void setBaby(BooleanEntityMetadata entityMetadata) {
+        super.setBaby(entityMetadata);
     }
 
     public void setRabbitVariant(IntEntityMetadata entityMetadata) {
@@ -53,7 +58,7 @@ public class RabbitEntity extends AnimalEntity {
         // Allow the resource pack to adjust to the killer bunny
         setFlag(EntityFlag.BRIBED, isKillerBunny);
 
-        dirtyMetadata.put(EntityDataTypes.VARIANT, variant);
+        dirtyMetadata.put(EntityData.VARIANT, variant);
     }
 
     @Override
@@ -67,7 +72,7 @@ public class RabbitEntity extends AnimalEntity {
     }
 
     @Override
-    public boolean canEat(Item item) {
-        return item == Items.DANDELION || item == Items.CARROT || item == Items.GOLDEN_CARROT;
+    public boolean canEat(String javaIdentifierStripped, ItemMapping mapping) {
+        return javaIdentifierStripped.equals("dandelion") || javaIdentifierStripped.equals("carrot") || javaIdentifierStripped.equals("golden_carrot");
     }
 }

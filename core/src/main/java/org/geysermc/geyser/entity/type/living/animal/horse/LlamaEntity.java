@@ -26,13 +26,12 @@
 package org.geysermc.geyser.entity.type.living.animal.horse;
 
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.type.IntEntityMetadata;
-import org.cloudburstmc.math.vector.Vector3f;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
-import org.cloudburstmc.protocol.bedrock.data.inventory.ItemData;
-import org.cloudburstmc.protocol.bedrock.packet.MobArmorEquipmentPacket;
+import com.nukkitx.math.vector.Vector3f;
+import com.nukkitx.protocol.bedrock.data.entity.EntityData;
+import com.nukkitx.protocol.bedrock.data.inventory.ItemData;
+import com.nukkitx.protocol.bedrock.packet.MobArmorEquipmentPacket;
 import org.geysermc.geyser.entity.EntityDefinition;
-import org.geysermc.geyser.item.Items;
-import org.geysermc.geyser.item.type.Item;
+import org.geysermc.geyser.registry.type.ItemMapping;
 import org.geysermc.geyser.session.GeyserSession;
 
 import java.util.UUID;
@@ -42,7 +41,7 @@ public class LlamaEntity extends ChestedHorseEntity {
     public LlamaEntity(GeyserSession session, int entityId, long geyserId, UUID uuid, EntityDefinition<?> definition, Vector3f position, Vector3f motion, float yaw, float pitch, float headYaw) {
         super(session, entityId, geyserId, uuid, definition, position, motion, yaw, pitch, headYaw);
 
-        dirtyMetadata.put(EntityDataTypes.CONTAINER_STRENGTH_MODIFIER, 3); // Presumably 3 slots for every 1 strength
+        dirtyMetadata.put(EntityData.CONTAINER_STRENGTH_MODIFIER, 3); // Presumably 3 slots for every 1 strength
     }
 
     /**
@@ -70,7 +69,7 @@ public class LlamaEntity extends ChestedHorseEntity {
     }
 
     @Override
-    public boolean canEat(Item item) {
-        return item == Items.WHEAT || item == Items.HAY_BLOCK;
+    public boolean canEat(String javaIdentifierStripped, ItemMapping mapping) {
+        return javaIdentifierStripped.equals("wheat") || javaIdentifierStripped.equals("hay_block");
     }
 }

@@ -25,11 +25,9 @@
 
 package org.geysermc.geyser.util.collection;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import org.junit.Assert;
+import org.junit.Test;
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class GeyserCollectionsTest {
     private final byte[] bytes = new byte[] {(byte) 5, (byte) 4, (byte) 3, (byte) 2, (byte) 2, (byte) 1};
     private final boolean[] booleans = new boolean[] {true, false, false, true};
@@ -53,35 +51,35 @@ public class GeyserCollectionsTest {
         int lastKey = index;
 
         // Easy, understandable out-of-bounds checks
-        Assertions.assertFalse(map.containsKey(lastKey), "Map contains key bigger by one!");
-        Assertions.assertTrue(map.containsKey(lastKey - 1), "Map doesn't contain final key!");
+        Assert.assertFalse("Map contains key bigger by one!", map.containsKey(lastKey));
+        Assert.assertTrue("Map doesn't contain final key!", map.containsKey(lastKey - 1));
 
         // Ensure the first and last values do not throw an exception on get, and test getOrDefault
         map.get(start - 1);
         map.get(lastKey);
-        Assertions.assertEquals(map.getOrDefault(start - 1, Byte.MAX_VALUE), Byte.MAX_VALUE);
-        Assertions.assertEquals(map.getOrDefault(lastKey, Byte.MAX_VALUE), Byte.MAX_VALUE);
-        Assertions.assertEquals(map.getOrDefault(lastKey, Byte.MIN_VALUE), Byte.MIN_VALUE);
+        Assert.assertEquals(map.getOrDefault(start - 1, Byte.MAX_VALUE), Byte.MAX_VALUE);
+        Assert.assertEquals(map.getOrDefault(lastKey, Byte.MAX_VALUE), Byte.MAX_VALUE);
+        Assert.assertEquals(map.getOrDefault(lastKey, Byte.MIN_VALUE), Byte.MIN_VALUE);
 
-        Assertions.assertEquals(map.size(), bytes.length);
+        Assert.assertEquals(map.size(), bytes.length);
 
         for (int i = start; i < bytes.length; i++) {
-            Assertions.assertTrue(map.containsKey(i));
-            Assertions.assertEquals(map.get(i), bytes[i - start]);
+            Assert.assertTrue(map.containsKey(i));
+            Assert.assertEquals(map.get(i), bytes[i - start]);
         }
 
         for (int i = start - 1; i >= (start - 6); i--) {
             // Lower than expected check
-            Assertions.assertFalse(map.containsKey(i), i + " is in a map that starts with " + start);
+            Assert.assertFalse(i + " is in a map that starts with " + start, map.containsKey(i));
         }
 
         for (int i = bytes.length + start; i < bytes.length + 5 + start; i++) {
             // Higher than expected check
-            Assertions.assertFalse(map.containsKey(i), i + " is in a map that ends with " + (start + bytes.length));
+            Assert.assertFalse(i + " is in a map that ends with " + (start + bytes.length), map.containsKey(i));
         }
 
         for (byte b : bytes) {
-            Assertions.assertTrue(map.containsValue(b));
+            Assert.assertTrue(map.containsValue(b));
         }
     }
 
@@ -101,33 +99,33 @@ public class GeyserCollectionsTest {
         int lastKey = index;
 
         // Easy, understandable out-of-bounds checks
-        Assertions.assertFalse(map.containsKey(lastKey), "Map contains key bigger by one!");
-        Assertions.assertTrue(map.containsKey(lastKey - 1), "Map doesn't contain final key!");
+        Assert.assertFalse("Map contains key bigger by one!", map.containsKey(lastKey));
+        Assert.assertTrue("Map doesn't contain final key!", map.containsKey(lastKey - 1));
 
         // Ensure the first and last values do not throw an exception on get
         map.get(start - 1);
         map.get(lastKey);
-        Assertions.assertTrue(map.getOrDefault(lastKey, true));
+        Assert.assertTrue(map.getOrDefault(lastKey, true));
 
-        Assertions.assertEquals(map.size(), booleans.length);
+        Assert.assertEquals(map.size(), booleans.length);
 
         for (int i = start; i < booleans.length; i++) {
-            Assertions.assertTrue(map.containsKey(i));
-            Assertions.assertEquals(map.get(i), booleans[i - start]);
+            Assert.assertTrue(map.containsKey(i));
+            Assert.assertEquals(map.get(i), booleans[i - start]);
         }
 
         for (int i = start - 1; i >= (start - 6); i--) {
             // Lower than expected check
-            Assertions.assertFalse(map.containsKey(i), i + " is in a map that starts with " + start);
+            Assert.assertFalse(i + " is in a map that starts with " + start, map.containsKey(i));
         }
 
         for (int i = booleans.length + start; i < booleans.length + start + 5; i++) {
             // Higher than expected check
-            Assertions.assertFalse(map.containsKey(i), i + " is in a map that ends with " + (start + booleans.length));
+            Assert.assertFalse(i + " is in a map that ends with " + (start + booleans.length), map.containsKey(i));
         }
 
         for (boolean b : booleans) {
-            Assertions.assertTrue(map.containsValue(b));
+            Assert.assertTrue(map.containsValue(b));
         }
     }
 
@@ -147,35 +145,35 @@ public class GeyserCollectionsTest {
         int lastKey = index;
 
         // Easy, understandable out-of-bounds checks
-        Assertions.assertFalse(map.containsKey(lastKey), "Map contains key bigger by one!");
-        Assertions.assertTrue(map.containsKey(lastKey - 1), "Map doesn't contain final key!");
+        Assert.assertFalse("Map contains key bigger by one!", map.containsKey(lastKey));
+        Assert.assertTrue("Map doesn't contain final key!", map.containsKey(lastKey - 1));
 
         // Ensure the first and last values do not throw an exception on get, and test getOrDefault
         map.get(start - 1);
         map.get(lastKey);
-        Assertions.assertEquals(map.getOrDefault(start - 1, Integer.MAX_VALUE), Integer.MAX_VALUE);
-        Assertions.assertEquals(map.getOrDefault(lastKey, Integer.MAX_VALUE), Integer.MAX_VALUE);
-        Assertions.assertEquals(map.getOrDefault(lastKey, Integer.MIN_VALUE), Integer.MIN_VALUE);
+        Assert.assertEquals(map.getOrDefault(start - 1, Integer.MAX_VALUE), Integer.MAX_VALUE);
+        Assert.assertEquals(map.getOrDefault(lastKey, Integer.MAX_VALUE), Integer.MAX_VALUE);
+        Assert.assertEquals(map.getOrDefault(lastKey, Integer.MIN_VALUE), Integer.MIN_VALUE);
 
-        Assertions.assertEquals(map.size(), ints.length);
+        Assert.assertEquals(map.size(), ints.length);
 
         for (int i = start; i < ints.length; i++) {
-            Assertions.assertTrue(map.containsKey(i));
-            Assertions.assertEquals(map.get(i), ints[i - start]);
+            Assert.assertTrue(map.containsKey(i));
+            Assert.assertEquals(map.get(i), ints[i - start]);
         }
 
         for (int i = start - 1; i >= (start - 6); i--) {
             // Lower than expected check
-            Assertions.assertFalse(map.containsKey(i), i + " is in a map that starts with " + start);
+            Assert.assertFalse(i + " is in a map that starts with " + start, map.containsKey(i));
         }
 
         for (int i = ints.length + start; i < ints.length + 5 + start; i++) {
             // Higher than expected check
-            Assertions.assertFalse(map.containsKey(i), i + " is in a map that ends with " + (start + ints.length));
+            Assert.assertFalse(i + " is in a map that ends with " + (start + ints.length), map.containsKey(i));
         }
 
         for (int i : ints) {
-            Assertions.assertTrue(map.containsValue(i));
+            Assert.assertTrue(map.containsValue(i));
         }
     }
 }

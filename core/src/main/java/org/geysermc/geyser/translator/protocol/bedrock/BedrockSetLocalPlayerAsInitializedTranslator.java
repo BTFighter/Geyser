@@ -25,10 +25,8 @@
 
 package org.geysermc.geyser.translator.protocol.bedrock;
 
-import org.cloudburstmc.protocol.bedrock.packet.SetLocalPlayerAsInitializedPacket;
-import org.geysermc.geyser.GeyserImpl;
-import org.geysermc.geyser.api.event.bedrock.SessionJoinEvent;
-import org.geysermc.geyser.api.network.AuthType;
+import com.nukkitx.protocol.bedrock.packet.SetLocalPlayerAsInitializedPacket;
+import org.geysermc.geyser.session.auth.AuthType;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
@@ -43,10 +41,10 @@ public class BedrockSetLocalPlayerAsInitializedTranslator extends PacketTranslat
             if (!session.getUpstream().isInitialized()) {
                 session.getUpstream().setInitialized(true);
 
-                if (session.remoteServer().authType() == AuthType.ONLINE) {
+                if (session.getRemoteAuthType() == AuthType.ONLINE) {
                     if (!session.isLoggedIn()) {
-                        if (session.getGeyser().getConfig().getSavedUserLogins().contains(session.bedrockUsername())) {
-                            if (session.getGeyser().refreshTokenFor(session.bedrockUsername()) == null) {
+                        if (session.getGeyser().getConfig().getSavedUserLogins().contains(session.name())) {
+                            if (session.getGeyser().refreshTokenFor(session.name()) == null) {
                                 LoginEncryptionUtils.buildAndShowConsentWindow(session);
                             } else {
                                 // If the refresh token is not null and we're here, then the refresh token expired
@@ -70,8 +68,6 @@ public class BedrockSetLocalPlayerAsInitializedTranslator extends PacketTranslat
 
                     // What am I to expect - as of Bedrock 1.18
                     session.getFormCache().resendAllForms();
-
-                    GeyserImpl.getInstance().eventBus().fire(new SessionJoinEvent(session));
                 }
             }
         }

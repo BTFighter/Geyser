@@ -27,9 +27,8 @@ package org.geysermc.geyser.translator.level.block.entity;
 
 import com.github.steveice10.mc.protocol.data.game.level.block.BlockEntityType;
 import com.github.steveice10.opennbt.tag.builtin.CompoundTag;
-import com.github.steveice10.opennbt.tag.builtin.StringTag;
 import com.github.steveice10.opennbt.tag.builtin.Tag;
-import org.cloudburstmc.nbt.NbtMapBuilder;
+import com.nukkitx.nbt.NbtMapBuilder;
 import org.geysermc.geyser.entity.EntityDefinition;
 import org.geysermc.geyser.registry.Registries;
 
@@ -69,18 +68,16 @@ public class SpawnerBlockEntityTranslator extends BlockEntityTranslator {
 
         CompoundTag spawnData = tag.get("SpawnData");
         if (spawnData != null) {
-            StringTag idTag = ((CompoundTag) spawnData.get("entity")).get("id");
-            if (idTag != null) {
-                // As of 1.19.3, spawners can be empty
-                String entityId = idTag.getValue();
-                builder.put("EntityIdentifier", entityId);
+            String entityID = (String) ((CompoundTag) spawnData.get("entity"))
+                    .get("id")
+                    .getValue();
+            builder.put("EntityIdentifier", entityID);
 
-                EntityDefinition<?> definition = Registries.JAVA_ENTITY_IDENTIFIERS.get(entityId);
-                if (definition != null) {
-                    builder.put("DisplayEntityWidth", definition.width());
-                    builder.put("DisplayEntityHeight", definition.height());
-                    builder.put("DisplayEntityScale", 1.0f);
-                }
+            EntityDefinition<?> definition = Registries.JAVA_ENTITY_IDENTIFIERS.get(entityID);
+            if (definition != null) {
+                builder.put("DisplayEntityWidth", definition.width());
+                builder.put("DisplayEntityHeight", definition.height());
+                builder.put("DisplayEntityScale", 1.0f);
             }
         }
 

@@ -25,15 +25,13 @@
 
 package org.geysermc.geyser.session.cache;
 
+import com.nukkitx.math.vector.Vector3f;
+import com.nukkitx.protocol.bedrock.data.entity.EntityData;
+import com.nukkitx.protocol.bedrock.packet.AddEntityPacket;
+import com.nukkitx.protocol.bedrock.packet.BossEventPacket;
+import com.nukkitx.protocol.bedrock.packet.RemoveEntityPacket;
 import lombok.AllArgsConstructor;
 import net.kyori.adventure.text.Component;
-import org.cloudburstmc.math.vector.Vector2f;
-import org.cloudburstmc.math.vector.Vector3f;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataMap;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
-import org.cloudburstmc.protocol.bedrock.packet.AddEntityPacket;
-import org.cloudburstmc.protocol.bedrock.packet.BossEventPacket;
-import org.cloudburstmc.protocol.bedrock.packet.RemoveEntityPacket;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.text.MessageTranslator;
 
@@ -59,7 +57,7 @@ public class BossBar {
         BossEventPacket bossEventPacket = new BossEventPacket();
         bossEventPacket.setBossUniqueEntityId(entityId);
         bossEventPacket.setAction(BossEventPacket.Action.CREATE);
-        bossEventPacket.setTitle(MessageTranslator.convertMessage(title, session.locale()));
+        bossEventPacket.setTitle(MessageTranslator.convertMessage(title, session.getLocale()));
         bossEventPacket.setHealthPercentage(health);
         bossEventPacket.setColor(color);
         bossEventPacket.setOverlay(overlay);
@@ -73,7 +71,7 @@ public class BossBar {
         BossEventPacket bossEventPacket = new BossEventPacket();
         bossEventPacket.setBossUniqueEntityId(entityId);
         bossEventPacket.setAction(BossEventPacket.Action.UPDATE_NAME);
-        bossEventPacket.setTitle(MessageTranslator.convertMessage(title, session.locale()));
+        bossEventPacket.setTitle(MessageTranslator.convertMessage(title, session.getLocale()));
 
         session.sendUpstreamPacket(bossEventPacket);
     }
@@ -118,12 +116,12 @@ public class BossBar {
         addEntityPacket.setIdentifier("minecraft:creeper");
         addEntityPacket.setEntityType(33);
         addEntityPacket.setPosition(session.getPlayerEntity().getPosition().sub(0D, -10D, 0D));
-        addEntityPacket.setRotation(Vector2f.ZERO);
+        addEntityPacket.setRotation(Vector3f.ZERO);
         addEntityPacket.setMotion(Vector3f.ZERO);
-        EntityDataMap metadata = addEntityPacket.getMetadata();
-        metadata.put(EntityDataTypes.SCALE, 0F);
-        metadata.put(EntityDataTypes.WIDTH, 0F);
-        metadata.put(EntityDataTypes.HEIGHT, 0F);
+        addEntityPacket.getMetadata()
+                .putFloat(EntityData.SCALE, 0F)
+                .putFloat(EntityData.BOUNDING_BOX_WIDTH, 0F)
+                .putFloat(EntityData.BOUNDING_BOX_HEIGHT, 0F);
 
         session.sendUpstreamPacket(addEntityPacket);
     }

@@ -34,7 +34,6 @@ import org.geysermc.geyser.network.netty.GeyserInjector;
 import org.geysermc.geyser.network.netty.LocalServerChannelWrapper;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.function.Supplier;
 
 public class GeyserVelocityInjector extends GeyserInjector {
@@ -68,23 +67,9 @@ public class GeyserVelocityInjector extends GeyserInjector {
         workerGroupField.setAccessible(true);
         EventLoopGroup workerGroup = (EventLoopGroup) workerGroupField.get(connectionManager);
 
-        // This method is what initializes the connection in Java Edition, after Netty is all set.
-        Method initChannel = ChannelInitializer.class.getDeclaredMethod("initChannel", Channel.class);
-        initChannel.setAccessible(true);
-
         ChannelFuture channelFuture = (new ServerBootstrap()
                 .channel(LocalServerChannelWrapper.class)
-                .childHandler(new ChannelInitializer<>() {
-                    @Override
-                    protected void initChannel(Channel ch) throws Exception {
-                        initChannel.invoke(channelInitializer, ch);
-
-                        if (bootstrap.getGeyserConfig().isDisableCompression() && GeyserVelocityCompressionDisabler.ENABLED) {
-                            ch.pipeline().addAfter("minecraft-encoder", "geyser-compression-disabler",
-                                    new GeyserVelocityCompressionDisabler());
-                        }
-                    }
-                })
+                .childHandler(channelInitializer)
                 .group(bossGroup, workerGroup) // Cannot be DefaultEventLoopGroup
                 .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, serverWriteMark) // Required or else rare network freezes can occur
                 .localAddress(LocalAddress.ANY))

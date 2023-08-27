@@ -27,11 +27,8 @@ package org.geysermc.geyser.configuration;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.geysermc.geyser.GeyserLogger;
-import org.geysermc.geyser.api.network.AuthType;
-import org.geysermc.geyser.api.network.BedrockListener;
-import org.geysermc.geyser.api.network.RemoteServer;
+import org.geysermc.geyser.session.auth.AuthType;
 import org.geysermc.geyser.network.CIDRMatcher;
-import org.geysermc.geyser.network.GameProtocol;
 import org.geysermc.geyser.text.GeyserLocale;
 
 import java.nio.file.Path;
@@ -39,10 +36,6 @@ import java.util.List;
 import java.util.Map;
 
 public interface GeyserConfiguration {
-    /**
-     * If the config was originally 'auto' before the values changed
-     */
-    void setAutoconfiguredRemote(boolean autoconfiguredRemote);
 
     // Modify this when you introduce breaking changes into the config
     int CURRENT_CONFIG_VERSION = 4;
@@ -88,6 +81,8 @@ public interface GeyserConfiguration {
 
     boolean isDisableBedrockScaffolding();
 
+    boolean isAlwaysQuickChangeArmor();
+
     EmoteOffhandWorkaroundOption getEmoteOffhandWorkaround();
 
     String getDefaultLocale();
@@ -110,24 +105,23 @@ public interface GeyserConfiguration {
 
     int getCustomSkullRenderDistance();
 
-    boolean isLogPlayerIpAddresses();
-
-    boolean isNotifyOnNewBedrockUpdate();
-
-    String getUnusableSpaceBlock();
-
     IMetricsInfo getMetrics();
 
     int getPendingAuthenticationTimeout();
 
-    boolean isAutoconfiguredRemote();
+    interface IBedrockConfiguration {
 
-    interface IBedrockConfiguration extends BedrockListener {
-        void setAddress(String address);
+        String getAddress();
 
-        void setPort(int port);
+        int getPort();
 
         boolean isCloneRemotePort();
+
+        String getMotd1();
+
+        String getMotd2();
+
+        String getServerName();
 
         int getCompressionLevel();
 
@@ -141,27 +135,23 @@ public interface GeyserConfiguration {
         List<CIDRMatcher> getWhitelistedIPsMatchers();
     }
 
-    interface IRemoteConfiguration extends RemoteServer {
+    interface IRemoteConfiguration {
+
+        String getAddress();
+
+        int getPort();
 
         void setAddress(String address);
 
         void setPort(int port);
+
+        AuthType getAuthType();
 
         boolean isPasswordAuthentication();
 
         boolean isUseProxyProtocol();
 
         boolean isForwardHost();
-
-        default String minecraftVersion() {
-            return GameProtocol.getJavaMinecraftVersion();
-        }
-
-        default int protocolVersion() {
-            return GameProtocol.getJavaProtocolVersion();
-        }
-
-        void setAuthType(AuthType authType);
     }
 
     interface IUserAuthenticationInfo {
@@ -191,8 +181,6 @@ public interface GeyserConfiguration {
     int getMtu();
 
     boolean isUseDirectConnection();
-
-    boolean isDisableCompression();
 
     int getConfigVersion();
 

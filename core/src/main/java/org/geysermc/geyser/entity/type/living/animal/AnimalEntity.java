@@ -25,16 +25,14 @@
 
 package org.geysermc.geyser.entity.type.living.animal;
 
-import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
-import org.cloudburstmc.math.vector.Vector3f;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityEventType;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
+import com.nukkitx.math.vector.Vector3f;
+import com.nukkitx.protocol.bedrock.data.entity.EntityEventType;
+import com.nukkitx.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.EntityDefinition;
 import org.geysermc.geyser.entity.type.living.AgeableEntity;
 import org.geysermc.geyser.inventory.GeyserItemStack;
-import org.geysermc.geyser.item.Items;
-import org.geysermc.geyser.item.type.Item;
 import org.geysermc.geyser.session.GeyserSession;
+import org.geysermc.geyser.registry.type.ItemMapping;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
 
@@ -48,29 +46,33 @@ public class AnimalEntity extends AgeableEntity {
     }
 
     public final boolean canEat(GeyserItemStack itemStack) {
-        return canEat(itemStack.asItem());
+        ItemMapping mapping = itemStack.getMapping(session);
+        String handIdentifier = mapping.getJavaIdentifier();
+        return canEat(handIdentifier.replace("minecraft:", ""), mapping);
     }
 
     /**
+     * @param javaIdentifierStripped the stripped Java identifier of the item that is potential breeding food. For example,
+     *                               <code>wheat</code>.
      * @return true if this is a valid item to breed with for this animal.
      */
-    public boolean canEat(Item item) {
+    public boolean canEat(String javaIdentifierStripped, ItemMapping mapping) {
         // This is what it defaults to. OK.
-        return item == Items.WHEAT;
+        return javaIdentifierStripped.equals("wheat");
     }
 
     @Nonnull
     @Override
-    protected InteractiveTag testMobInteraction(@Nonnull Hand hand, @Nonnull GeyserItemStack itemInHand) {
+    protected InteractiveTag testMobInteraction(@Nonnull GeyserItemStack itemInHand) {
         if (canEat(itemInHand)) {
             return InteractiveTag.FEED;
         }
-        return super.testMobInteraction(hand, itemInHand);
+        return super.testMobInteraction(itemInHand);
     }
 
     @Nonnull
     @Override
-    protected InteractionResult mobInteract(@Nonnull Hand hand, @Nonnull GeyserItemStack itemInHand) {
+    protected InteractionResult mobInteract(@Nonnull GeyserItemStack itemInHand) {
         if (canEat(itemInHand)) {
             // FEED
             if (getFlag(EntityFlag.BABY)) {
@@ -80,6 +82,6 @@ public class AnimalEntity extends AgeableEntity {
                 return InteractionResult.CONSUME;
             }
         }
-        return super.mobInteract(hand, itemInHand);
+        return super.mobInteract(itemInHand);
     }
 }

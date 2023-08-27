@@ -27,8 +27,8 @@ package org.geysermc.geyser.registry.type;
 
 import lombok.Builder;
 import lombok.Value;
-import org.geysermc.geyser.level.physics.PistonBehavior;
 import org.geysermc.geyser.util.BlockUtils;
+import org.geysermc.geyser.level.physics.PistonBehavior;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -45,7 +45,7 @@ public class BlockMapping {
      */
     int javaBlockId;
 
-    float hardness;
+    double hardness;
     boolean canBreakWithHand;
     /**
      * The index of this collision in collision.json
@@ -56,7 +56,6 @@ public class BlockMapping {
     @Nonnull
     PistonBehavior pistonBehavior;
     boolean isBlockEntity;
-    boolean isNonVanilla;
 
     /**
      * @return the identifier without the additional block states

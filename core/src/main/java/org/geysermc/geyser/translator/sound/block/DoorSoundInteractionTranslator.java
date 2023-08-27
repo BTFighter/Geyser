@@ -25,10 +25,9 @@
 
 package org.geysermc.geyser.translator.sound.block;
 
-import org.cloudburstmc.math.vector.Vector3f;
-import org.cloudburstmc.protocol.bedrock.data.LevelEvent;
-import org.cloudburstmc.protocol.bedrock.data.LevelEventType;
-import org.cloudburstmc.protocol.bedrock.packet.LevelEventPacket;
+import com.nukkitx.math.vector.Vector3f;
+import com.nukkitx.protocol.bedrock.data.LevelEventType;
+import com.nukkitx.protocol.bedrock.packet.LevelEventPacket;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.sound.BlockSoundInteractionTranslator;
 import org.geysermc.geyser.translator.sound.SoundTranslator;
@@ -40,7 +39,7 @@ public class DoorSoundInteractionTranslator implements BlockSoundInteractionTran
     public void translate(GeyserSession session, Vector3f position, String identifier) {
         if (identifier.contains("iron")) return;
         LevelEventPacket levelEventPacket = new LevelEventPacket();
-        levelEventPacket.setType(LevelEvent.SOUND_DOOR_OPEN);
+        levelEventPacket.setType(LevelEventType.SOUND_DOOR_OPEN);
         levelEventPacket.setPosition(position);
         levelEventPacket.setData(0);
         session.sendUpstreamPacket(levelEventPacket);

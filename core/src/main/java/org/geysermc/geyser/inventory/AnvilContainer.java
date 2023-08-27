@@ -75,8 +75,8 @@ public class AnvilContainer extends Container {
 
         String originalName = ItemUtils.getCustomName(getInput().getNbt());
 
-        String plainOriginalName = MessageTranslator.convertToPlainTextLenient(originalName, session.locale());
-        String plainNewName = MessageTranslator.convertToPlainText(rename);
+        String plainOriginalName = MessageTranslator.convertToPlainText(originalName, session.getLocale());
+        String plainNewName = MessageTranslator.convertToPlainText(rename, session.getLocale());
         if (!plainOriginalName.equals(plainNewName)) {
             // Strip out formatting since Java Edition does not allow it
             correctRename = plainNewName;

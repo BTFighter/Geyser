@@ -29,35 +29,40 @@ import com.github.steveice10.mc.protocol.data.game.entity.attribute.Attribute;
 import com.github.steveice10.mc.protocol.data.game.entity.attribute.AttributeType;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.EntityMetadata;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.Pose;
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.type.FloatEntityMetadata;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.type.IntEntityMetadata;
 import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
 import com.github.steveice10.opennbt.tag.builtin.CompoundTag;
 import com.github.steveice10.opennbt.tag.builtin.StringTag;
+import com.nukkitx.math.vector.Vector3f;
+import com.nukkitx.math.vector.Vector3i;
+import com.nukkitx.protocol.bedrock.data.AttributeData;
+import com.nukkitx.protocol.bedrock.data.entity.EntityData;
+import com.nukkitx.protocol.bedrock.data.entity.EntityFlag;
+import com.nukkitx.protocol.bedrock.data.inventory.ContainerId;
+import com.nukkitx.protocol.bedrock.data.inventory.ItemData;
+import com.nukkitx.protocol.bedrock.packet.MobArmorEquipmentPacket;
+import com.nukkitx.protocol.bedrock.packet.MobEquipmentPacket;
+import com.nukkitx.protocol.bedrock.packet.UpdateAttributesPacket;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
-import org.cloudburstmc.math.vector.Vector3f;
-import org.cloudburstmc.math.vector.Vector3i;
-import org.cloudburstmc.protocol.bedrock.data.AttributeData;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
-import org.cloudburstmc.protocol.bedrock.data.inventory.ContainerId;
-import org.cloudburstmc.protocol.bedrock.data.inventory.ItemData;
-import org.cloudburstmc.protocol.bedrock.packet.MobArmorEquipmentPacket;
-import org.cloudburstmc.protocol.bedrock.packet.MobEquipmentPacket;
-import org.cloudburstmc.protocol.bedrock.packet.UpdateAttributesPacket;
 import org.geysermc.geyser.entity.EntityDefinition;
 import org.geysermc.geyser.entity.attribute.GeyserAttributeType;
 import org.geysermc.geyser.inventory.GeyserItemStack;
-import org.geysermc.geyser.item.Items;
-import org.geysermc.geyser.registry.type.ItemMapping;
 import org.geysermc.geyser.session.GeyserSession;
+import org.geysermc.geyser.registry.type.ItemMapping;
 import org.geysermc.geyser.util.AttributeUtils;
+import org.geysermc.geyser.util.ChunkUtils;
 import org.geysermc.geyser.util.InteractionResult;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -88,7 +93,7 @@ public class LivingEntity extends Entity {
     protected void initializeMetadata() {
         super.initializeMetadata();
         // Matches Bedrock behavior; is always set to this
-        dirtyMetadata.put(EntityDataTypes.STRUCTURAL_INTEGRITY, 1);
+        dirtyMetadata.put(EntityData.HEALTH, 1);
     }
 
     public void setLivingEntityFlags(ByteEntityMetadata entityMetadata) {
@@ -97,7 +102,8 @@ public class LivingEntity extends Entity {
         boolean isUsingItem = (xd & 0x01) == 0x01;
         boolean isUsingOffhand = (xd & 0x02) == 0x02;
 
-        boolean isUsingShield = hasShield(isUsingOffhand);
+        ItemMapping shield = session.getItemMappings().getStoredItems().shield();
+        boolean isUsingShield = hasShield(isUsingOffhand, shield);
 
         setFlag(EntityFlag.USING_ITEM, isUsingItem && !isUsingShield);
         // Override the blocking
@@ -105,9 +111,6 @@ public class LivingEntity extends Entity {
 
         // Riptide spin attack
         setFlag(EntityFlag.DAMAGE_NEARBY_MOBS, (xd & 0x04) == 0x04);
-
-        // OptionalPack usage
-        setFlag(EntityFlag.EMERGING, isUsingItem && isUsingOffhand);
     }
 
     public void setHealth(FloatEntityMetadata entityMetadata) {
@@ -120,23 +123,32 @@ public class LivingEntity extends Entity {
         session.sendUpstreamPacket(attributesPacket);
     }
 
-    public Vector3i setBedPosition(EntityMetadata<Optional<Vector3i>, ?> entityMetadata) {
-        Optional<Vector3i> optionalPos = entityMetadata.getValue();
+    public Vector3i setBedPosition(EntityMetadata<Optional<Position>, ?> entityMetadata) {
+        Optional<Position> optionalPos = entityMetadata.getValue();
         if (optionalPos.isPresent()) {
-            Vector3i bedPosition = optionalPos.get();
-            dirtyMetadata.put(EntityDataTypes.BED_POSITION, bedPosition);
-            return bedPosition;
+            Position bedPosition = optionalPos.get();
+            Vector3i vector = Vector3i.from(bedPosition.getX(), bedPosition.getY(), bedPosition.getZ());
+            dirtyMetadata.put(EntityData.BED_POSITION, vector);
+            int bed = session.getGeyser().getWorldManager().getBlockAt(session, bedPosition);
+            // Bed has to be updated, or else player is floating in the air
+            ChunkUtils.updateBlock(session, bed, bedPosition);
+            // Indicate that the player should enter the sleep cycle
+            // Has to be a byte or it does not work
+            // (Bed position is what actually triggers sleep - "pose" is only optional)
+            dirtyMetadata.put(EntityData.PLAYER_FLAGS, (byte) 2);
+            return vector;
         } else {
+            // Player is no longer sleeping
+            dirtyMetadata.put(EntityData.PLAYER_FLAGS, (byte) 0);
             return null;
         }
     }
 
-    protected boolean hasShield(boolean offhand) {
-        ItemMapping shieldMapping = session.getItemMappings().getStoredItems().shield();
+    protected boolean hasShield(boolean offhand, ItemMapping shieldMapping) {
         if (offhand) {
-            return offHand.getDefinition().equals(shieldMapping.getBedrockDefinition());
+            return offHand.getId() == shieldMapping.getBedrockId();
         } else {
-            return hand.getDefinition().equals(shieldMapping.getBedrockDefinition());
+            return hand.getId() == shieldMapping.getBedrockId();
         }
     }
 
@@ -180,7 +192,7 @@ public class LivingEntity extends Entity {
     @Override
     public InteractionResult interact(Hand hand) {
         GeyserItemStack itemStack = session.getPlayerInventory().getItemInHand(hand);
-        if (itemStack.asItem() == Items.NAME_TAG) {
+        if (itemStack.getJavaId() == session.getItemMappings().getStoredItems().nameTag()) {
             InteractionResult result = checkInteractWithNameTag(itemStack);
             if (result.consumesAction()) {
                 return result;
@@ -210,10 +222,10 @@ public class LivingEntity extends Entity {
         // If an entity has a banner on them, it will be in the helmet slot in Java but the chestplate spot in Bedrock
         // But don't overwrite the chestplate if it isn't empty
         ItemMapping banner = session.getItemMappings().getStoredItems().banner();
-        if (ItemData.AIR.equals(chestplate) && helmet.getDefinition().equals(banner.getBedrockDefinition())) {
+        if (chestplate.getId() == ItemData.AIR.getId() && helmet.getId() == banner.getBedrockId()) {
             chestplate = this.helmet;
             helmet = ItemData.AIR;
-        } else if (chestplate.getDefinition().equals(banner.getBedrockDefinition())) {
+        } else if (chestplate.getId() == banner.getBedrockId()) {
             // Prevent chestplate banners from showing erroneously
             chestplate = ItemData.AIR;
         }

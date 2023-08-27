@@ -25,14 +25,12 @@
 
 package org.geysermc.geyser.entity.type.living.animal;
 
-import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
-import org.cloudburstmc.math.vector.Vector3f;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
+import com.nukkitx.math.vector.Vector3f;
+import com.nukkitx.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.EntityDefinition;
 import org.geysermc.geyser.inventory.GeyserItemStack;
-import org.geysermc.geyser.item.Items;
-import org.geysermc.geyser.item.type.Item;
 import org.geysermc.geyser.session.GeyserSession;
+import org.geysermc.geyser.registry.type.ItemMapping;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
 
@@ -46,29 +44,29 @@ public class OcelotEntity extends AnimalEntity {
     }
 
     @Override
-    public boolean canEat(Item item) {
-        return item == Items.COD || item == Items.SALMON;
+    public boolean canEat(String javaIdentifierStripped, ItemMapping mapping) {
+        return javaIdentifierStripped.equals("cod") || javaIdentifierStripped.equals("salmon");
     }
 
     @Nonnull
     @Override
-    protected InteractiveTag testMobInteraction(Hand hand, @Nonnull GeyserItemStack itemInHand) {
+    protected InteractiveTag testMobInteraction(@Nonnull GeyserItemStack itemInHand) {
         if (!getFlag(EntityFlag.TRUSTING) && canEat(itemInHand) && session.getPlayerEntity().getPosition().distanceSquared(position) < 9f) {
             // Attempt to feed
             return InteractiveTag.FEED;
         } else {
-            return super.testMobInteraction(hand, itemInHand);
+            return super.testMobInteraction(itemInHand);
         }
     }
 
     @Nonnull
     @Override
-    protected InteractionResult mobInteract(Hand hand, @Nonnull GeyserItemStack itemInHand) {
+    protected InteractionResult mobInteract(@Nonnull GeyserItemStack itemInHand) {
         if (!getFlag(EntityFlag.TRUSTING) && canEat(itemInHand) && session.getPlayerEntity().getPosition().distanceSquared(position) < 9f) {
             // Attempt to feed
             return InteractionResult.SUCCESS;
         } else {
-            return super.mobInteract(hand, itemInHand);
+            return super.mobInteract(itemInHand);
         }
     }
 }

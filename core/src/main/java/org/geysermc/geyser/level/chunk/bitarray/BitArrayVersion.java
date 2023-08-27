@@ -96,7 +96,7 @@ public enum BitArrayVersion {
             // Padded palettes aren't able to use bitwise operations due to their padding.
             return new PaddedBitArray(this, size, words);
         } else if (this == V0) {
-            return SingletonBitArray.INSTANCE;
+            return new SingletonBitArray();
         } else {
             return new Pow2BitArray(this, size, words);
         }

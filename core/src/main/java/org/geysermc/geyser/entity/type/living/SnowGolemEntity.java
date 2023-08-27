@@ -26,12 +26,10 @@
 package org.geysermc.geyser.entity.type.living;
 
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
-import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
-import org.cloudburstmc.math.vector.Vector3f;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
+import com.nukkitx.math.vector.Vector3f;
+import com.nukkitx.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.EntityDefinition;
 import org.geysermc.geyser.inventory.GeyserItemStack;
-import org.geysermc.geyser.item.Items;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
@@ -53,8 +51,8 @@ public class SnowGolemEntity extends GolemEntity {
 
     @Nonnull
     @Override
-    protected InteractiveTag testMobInteraction(@Nonnull Hand hand, @Nonnull GeyserItemStack itemInHand) {
-        if (Items.SHEARS == itemInHand.asItem() && isAlive() && !getFlag(EntityFlag.SHEARED)) {
+    protected InteractiveTag testMobInteraction(@Nonnull GeyserItemStack itemInHand) {
+        if (session.getItemMappings().getStoredItems().shears() == itemInHand.getJavaId() && isAlive() && !getFlag(EntityFlag.SHEARED)) {
             // Shearing the snow golem
             return InteractiveTag.SHEAR;
         }
@@ -63,8 +61,8 @@ public class SnowGolemEntity extends GolemEntity {
 
     @Nonnull
     @Override
-    protected InteractionResult mobInteract(@Nonnull Hand hand, @Nonnull GeyserItemStack itemInHand) {
-        if (Items.SHEARS == itemInHand.asItem() && isAlive() && !getFlag(EntityFlag.SHEARED)) {
+    protected InteractionResult mobInteract(@Nonnull GeyserItemStack itemInHand) {
+        if (session.getItemMappings().getStoredItems().shears() == itemInHand.getJavaId() && isAlive() && !getFlag(EntityFlag.SHEARED)) {
             // Shearing the snow golem
             return InteractionResult.SUCCESS;
         }

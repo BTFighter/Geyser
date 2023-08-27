@@ -26,17 +26,15 @@
 package org.geysermc.geyser.entity.type.living.animal;
 
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
-import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
-import org.cloudburstmc.math.vector.Vector3f;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
+import com.nukkitx.math.vector.Vector3f;
+import com.nukkitx.protocol.bedrock.data.entity.EntityData;
+import com.nukkitx.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.EntityDefinition;
 import org.geysermc.geyser.inventory.GeyserItemStack;
-import org.geysermc.geyser.item.Items;
-import org.geysermc.geyser.item.type.DyeItem;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
+import org.geysermc.geyser.util.ItemUtils;
 
 import javax.annotation.Nonnull;
 import java.util.UUID;
@@ -52,20 +50,21 @@ public class SheepEntity extends AnimalEntity {
         byte xd = entityMetadata.getPrimitiveValue();
         setFlag(EntityFlag.SHEARED, (xd & 0x10) == 0x10);
         color = xd & 15;
-        dirtyMetadata.put(EntityDataTypes.COLOR, (byte) color);
+        dirtyMetadata.put(EntityData.COLOR, (byte) color);
     }
 
     @Nonnull
     @Override
-    protected InteractiveTag testMobInteraction(@Nonnull Hand hand, @Nonnull GeyserItemStack itemInHand) {
-        if (itemInHand.asItem() == Items.SHEARS) {
+    protected InteractiveTag testMobInteraction(@Nonnull GeyserItemStack itemInHand) {
+        if (itemInHand.getJavaId() == session.getItemMappings().getStoredItems().shears()) {
             return InteractiveTag.SHEAR;
         } else {
-            InteractiveTag tag = super.testMobInteraction(hand, itemInHand);
+            InteractiveTag tag = super.testMobInteraction(itemInHand);
             if (tag != InteractiveTag.NONE) {
                 return tag;
             } else {
-                if (canDye(itemInHand)) {
+                int color = ItemUtils.dyeColorFor(itemInHand.getJavaId());
+                if (canDye(color)) {
                     return InteractiveTag.DYE;
                 }
                 return InteractiveTag.NONE;
@@ -75,15 +74,16 @@ public class SheepEntity extends AnimalEntity {
 
     @Nonnull
     @Override
-    protected InteractionResult mobInteract(@Nonnull Hand hand, @Nonnull GeyserItemStack itemInHand) {
-        if (itemInHand.asItem() == Items.SHEARS) {
+    protected InteractionResult mobInteract(@Nonnull GeyserItemStack itemInHand) {
+        if (itemInHand.getJavaId() == session.getItemMappings().getStoredItems().shears()) {
             return InteractionResult.CONSUME;
         } else {
-            InteractionResult superResult = super.mobInteract(hand, itemInHand);
+            InteractionResult superResult = super.mobInteract(itemInHand);
             if (superResult.consumesAction()) {
                 return superResult;
             } else {
-                if (canDye(itemInHand)) {
+                int color = ItemUtils.dyeColorFor(itemInHand.getJavaId());
+                if (canDye(color)) {
                     // Dyeing the sheep
                     return InteractionResult.SUCCESS;
                 }
@@ -92,7 +92,7 @@ public class SheepEntity extends AnimalEntity {
         }
     }
 
-    private boolean canDye(GeyserItemStack item) {
-        return item.asItem() instanceof DyeItem dyeItem && dyeItem.dyeColor() != this.color && !getFlag(EntityFlag.SHEARED);
+    private boolean canDye(int color) {
+        return color != -1 && color != this.color && !getFlag(EntityFlag.SHEARED);
     }
 }

@@ -25,19 +25,12 @@
 
 package org.geysermc.geyser.level;
 
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
 import com.github.steveice10.mc.protocol.data.game.entity.player.GameMode;
-import com.github.steveice10.mc.protocol.data.game.level.block.BlockEntityInfo;
 import com.github.steveice10.mc.protocol.data.game.setting.Difficulty;
-import com.github.steveice10.opennbt.tag.builtin.CompoundTag;
-import org.cloudburstmc.math.vector.Vector3i;
-import org.geysermc.erosion.util.BlockPositionIterator;
+import com.nukkitx.math.vector.Vector3i;
+import com.nukkitx.nbt.NbtMap;
 import org.geysermc.geyser.session.GeyserSession;
-import org.jetbrains.annotations.Nullable;
-
-import javax.annotation.Nonnull;
-import java.util.List;
-import java.util.Locale;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * Class that manages or retrieves various information
@@ -52,10 +45,21 @@ public abstract class WorldManager {
      * Gets the Java block state at the specified location
      *
      * @param session the session
+     * @param position the position
+     * @return the block state at the specified location
+     */
+    public int getBlockAt(GeyserSession session, Position position) {
+        return this.getBlockAt(session, position.getX(), position.getY(), position.getZ());
+    }
+
+    /**
+     * Gets the Java block state at the specified location
+     *
+     * @param session the session
      * @param vector the position
      * @return the block state at the specified location
      */
-    public final int getBlockAt(GeyserSession session, Vector3i vector) {
+    public int getBlockAt(GeyserSession session, Vector3i vector) {
         return this.getBlockAt(session, vector.getX(), vector.getY(), vector.getZ());
     }
 
@@ -69,23 +73,6 @@ public abstract class WorldManager {
      * @return the block state at the specified location
      */
     public abstract int getBlockAt(GeyserSession session, int x, int y, int z);
-
-    public final CompletableFuture<Integer> getBlockAtAsync(GeyserSession session, Vector3i vector) {
-        return this.getBlockAtAsync(session, vector.getX(), vector.getY(), vector.getZ());
-    }
-
-    public CompletableFuture<Integer> getBlockAtAsync(GeyserSession session, int x, int y, int z) {
-        return CompletableFuture.completedFuture(this.getBlockAt(session, x, y, z));
-    }
-
-    public int[] getBlocksAt(GeyserSession session, BlockPositionIterator iter) {
-        int[] blocks = new int[iter.getMaxIterations()];
-        for (; iter.hasNext(); iter.next()) {
-            int networkId = this.getBlockAt(session, iter.getX(), iter.getY(), iter.getZ());
-            blocks[iter.getIteration()] = networkId;
-        }
-        return blocks;
-    }
 
     /**
      * Checks whether or not this world manager requires a separate chunk cache/has access to more block data than the chunk cache.
@@ -108,28 +95,20 @@ public abstract class WorldManager {
      * We solve this problem by querying all loaded lecterns, where possible, and sending their information in a block entity
      * tag.
      *
-     * Note that the lectern data may be sent asynchronously.
-     *
      * @param session the session of the player
      * @param x the x coordinate of the lectern
      * @param y the y coordinate of the lectern
      * @param z the z coordinate of the lectern
+     * @param isChunkLoad if this is called during a chunk load or not. Changes behavior in certain instances.
+     * @return the Bedrock lectern block entity tag. This may not be the exact block entity tag - for example, Spigot's
+     * block handled must be done on the server thread, so we send the tag manually there.
      */
-    public abstract void sendLecternData(GeyserSession session, int x, int y, int z);
-
-    /**
-     * {@link #sendLecternData(GeyserSession, int, int, int)} but batched for chunks.
-     *
-     * @param x chunk x
-     * @param z chunk z
-     * @param blockEntityInfos a list of coordinates (chunk local) to grab lecterns from.
-     */
-    public abstract void sendLecternData(GeyserSession session, int x, int z, List<BlockEntityInfo> blockEntityInfos);
+    public abstract NbtMap getLecternDataAt(GeyserSession session, int x, int y, int z, boolean isChunkLoad);
 
     /**
      * @return whether we should expect lectern data to update, or if we have to fall back on a workaround.
      */
-    public abstract boolean shouldExpectLecternHandled(GeyserSession session);
+    public abstract boolean shouldExpectLecternHandled();
 
     /**
      * Updates a gamerule value on the Java server
@@ -138,9 +117,7 @@ public abstract class WorldManager {
      * @param name The gamerule to change
      * @param value The new value for the gamerule
      */
-    public void setGameRule(GeyserSession session, String name, Object value) {
-        session.sendCommand("gamerule " + name + " " + value);
-    }
+    public abstract void setGameRule(GeyserSession session, String name, Object value);
 
     /**
      * Gets a gamerule value as a boolean
@@ -149,7 +126,7 @@ public abstract class WorldManager {
      * @param gameRule The gamerule to fetch the value of
      * @return The boolean representation of the value
      */
-    public abstract boolean getGameRuleBool(GeyserSession session, GameRule gameRule);
+    public abstract Boolean getGameRuleBool(GeyserSession session, GameRule gameRule);
 
     /**
      * Get a gamerule value as an integer
@@ -166,9 +143,7 @@ public abstract class WorldManager {
      * @param session The session of the player to change the game mode of
      * @param gameMode The game mode to change the player to
      */
-    public void setPlayerGameMode(GeyserSession session, GameMode gameMode) {
-        session.sendCommand("gamemode " + gameMode.name().toLowerCase(Locale.ROOT));
-    }
+    public abstract void setPlayerGameMode(GeyserSession session, GameMode gameMode);
 
     /**
      * Change the difficulty of the Java server
@@ -176,9 +151,7 @@ public abstract class WorldManager {
      * @param session The session of the user that requested the change
      * @param difficulty The difficulty to change to
      */
-    public void setDifficulty(GeyserSession session, Difficulty difficulty) {
-        session.sendCommand("difficulty " + difficulty.name().toLowerCase(Locale.ROOT));
-    }
+    public abstract void setDifficulty(GeyserSession session, Difficulty difficulty);
 
     /**
      * Checks if the given session's player has a permission
@@ -188,22 +161,4 @@ public abstract class WorldManager {
      * @return True if the player has the requested permission, false if not
      */
     public abstract boolean hasPermission(GeyserSession session, String permission);
-
-    /**
-     * Returns a list of biome identifiers available on the server.
-     */
-    @Nullable
-    public String[] getBiomeIdentifiers(boolean withTags) {
-        return null;
-    }
-
-    /**
-     * Used for pick block, so we don't need to cache more data than necessary.
-     *
-     * @return expected NBT for this item.
-     */
-    @Nonnull
-    public CompletableFuture<@Nullable CompoundTag> getPickItemNbt(GeyserSession session, int x, int y, int z, boolean addNbtData) {
-        return CompletableFuture.completedFuture(null);
-    }
 }

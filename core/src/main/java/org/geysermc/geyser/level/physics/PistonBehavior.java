@@ -33,7 +33,7 @@ public enum PistonBehavior {
     DESTROY,
     PUSH_ONLY;
 
-    private static final PistonBehavior[] VALUES = values();
+    public static final PistonBehavior[] VALUES = values();
 
     public static PistonBehavior getByName(String name) {
         String upperCase = name.toUpperCase(Locale.ROOT);

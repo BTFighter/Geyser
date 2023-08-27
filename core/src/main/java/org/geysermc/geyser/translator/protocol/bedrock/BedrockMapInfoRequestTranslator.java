@@ -25,8 +25,8 @@
 
 package org.geysermc.geyser.translator.protocol.bedrock;
 
-import org.cloudburstmc.protocol.bedrock.packet.ClientboundMapItemDataPacket;
-import org.cloudburstmc.protocol.bedrock.packet.MapInfoRequestPacket;
+import com.nukkitx.protocol.bedrock.packet.ClientboundMapItemDataPacket;
+import com.nukkitx.protocol.bedrock.packet.MapInfoRequestPacket;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;

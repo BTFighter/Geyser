@@ -86,7 +86,7 @@ public class ColorPane extends JTextPane {
             while (stillSearching) {
                 mIndex = addString.indexOf("m", aPos); // find the end of the escape sequence
                 if (mIndex < 0) { // the buffer ends halfway through the ansi string!
-                    remaining = addString.substring(aPos);
+                    remaining = addString.substring(aPos, addString.length());
                     stillSearching = false;
                     continue;
                 } else {
@@ -99,7 +99,7 @@ public class ColorPane extends JTextPane {
                 aIndex = addString.indexOf("\u001B", aPos);
 
                 if (aIndex == -1) { // if that was the last sequence of the input, send remaining text
-                    tmpString = addString.substring(aPos);
+                    tmpString = addString.substring(aPos, addString.length());
                     append(colorCurrent, tmpString);
                     stillSearching = false;
                     continue; // jump out of loop early, as the whole string has been sent now

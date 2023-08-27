@@ -25,9 +25,9 @@
 
 package org.geysermc.geyser.translator.inventory;
 
-import org.cloudburstmc.protocol.bedrock.data.inventory.ContainerSlotType;
-import org.cloudburstmc.protocol.bedrock.data.inventory.ContainerType;
-import org.cloudburstmc.protocol.bedrock.data.inventory.itemstack.request.ItemStackRequestSlotData;
+import com.nukkitx.protocol.bedrock.data.inventory.ContainerSlotType;
+import com.nukkitx.protocol.bedrock.data.inventory.ContainerType;
+import com.nukkitx.protocol.bedrock.data.inventory.StackRequestSlotInfoData;
 import org.geysermc.geyser.inventory.BedrockContainerSlot;
 import org.geysermc.geyser.inventory.SlotType;
 import org.geysermc.geyser.inventory.updater.UIInventoryUpdater;
@@ -62,13 +62,13 @@ public class CraftingInventoryTranslator extends AbstractBlockInventoryTranslato
     }
 
     @Override
-    public int bedrockSlotToJava(ItemStackRequestSlotData slotInfoData) {
+    public int bedrockSlotToJava(StackRequestSlotInfoData slotInfoData) {
         if (slotInfoData.getContainer() == ContainerSlotType.CRAFTING_INPUT) {
             // Java goes from 1 - 9, left to right then up to down
             // Bedrock is the same, but it starts from 32.
             return slotInfoData.getSlot() - 31;
         }
-        if (slotInfoData.getContainer() == ContainerSlotType.CRAFTING_OUTPUT || slotInfoData.getContainer() == ContainerSlotType.CREATED_OUTPUT) {
+        if (slotInfoData.getContainer() == ContainerSlotType.CRAFTING_OUTPUT || slotInfoData.getContainer() == ContainerSlotType.CREATIVE_OUTPUT) {
             return 0;
         }
         return super.bedrockSlotToJava(slotInfoData);

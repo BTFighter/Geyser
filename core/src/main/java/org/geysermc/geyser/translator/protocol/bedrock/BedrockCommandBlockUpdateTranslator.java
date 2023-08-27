@@ -25,10 +25,11 @@
 
 package org.geysermc.geyser.translator.protocol.bedrock;
 
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
 import com.github.steveice10.mc.protocol.data.game.level.block.CommandBlockMode;
-import com.github.steveice10.mc.protocol.packet.ingame.serverbound.inventory.ServerboundSetCommandBlockPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.serverbound.inventory.ServerboundSetCommandMinecartPacket;
-import org.cloudburstmc.protocol.bedrock.packet.CommandBlockUpdatePacket;
+import com.github.steveice10.mc.protocol.packet.ingame.serverbound.inventory.ServerboundSetCommandBlockPacket;
+import com.nukkitx.protocol.bedrock.packet.CommandBlockUpdatePacket;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
@@ -52,7 +53,8 @@ public class BedrockCommandBlockUpdateTranslator extends PacketTranslator<Comman
             boolean isConditional = packet.isConditional();
             boolean automatic = !packet.isRedstoneMode(); // Automatic = Always Active option in Java
             ServerboundSetCommandBlockPacket commandBlockPacket = new ServerboundSetCommandBlockPacket(
-                    packet.getBlockPosition(), command, mode, outputTracked, isConditional, automatic);
+                    new Position(packet.getBlockPosition().getX(), packet.getBlockPosition().getY(), packet.getBlockPosition().getZ()),
+                    command, mode, outputTracked, isConditional, automatic);
             session.sendDownstreamPacket(commandBlockPacket);
         } else {
             ServerboundSetCommandMinecartPacket commandMinecartPacket = new ServerboundSetCommandMinecartPacket(

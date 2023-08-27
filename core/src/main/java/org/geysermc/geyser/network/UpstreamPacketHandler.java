@@ -25,142 +25,64 @@
 
 package org.geysermc.geyser.network;
 
-import io.netty.buffer.Unpooled;
-import org.cloudburstmc.protocol.bedrock.BedrockDisconnectReasons;
-import org.cloudburstmc.protocol.bedrock.codec.BedrockCodec;
-import org.cloudburstmc.protocol.bedrock.data.ExperimentData;
-import org.cloudburstmc.protocol.bedrock.data.PacketCompressionAlgorithm;
-import org.cloudburstmc.protocol.bedrock.data.ResourcePackType;
-import org.cloudburstmc.protocol.bedrock.packet.BedrockPacket;
-import org.cloudburstmc.protocol.bedrock.packet.LoginPacket;
-import org.cloudburstmc.protocol.bedrock.packet.ModalFormResponsePacket;
-import org.cloudburstmc.protocol.bedrock.packet.MovePlayerPacket;
-import org.cloudburstmc.protocol.bedrock.packet.NetworkSettingsPacket;
-import org.cloudburstmc.protocol.bedrock.packet.PlayStatusPacket;
-import org.cloudburstmc.protocol.bedrock.packet.RequestNetworkSettingsPacket;
-import org.cloudburstmc.protocol.bedrock.packet.ResourcePackChunkDataPacket;
-import org.cloudburstmc.protocol.bedrock.packet.ResourcePackChunkRequestPacket;
-import org.cloudburstmc.protocol.bedrock.packet.ResourcePackClientResponsePacket;
-import org.cloudburstmc.protocol.bedrock.packet.ResourcePackDataInfoPacket;
-import org.cloudburstmc.protocol.bedrock.packet.ResourcePackStackPacket;
-import org.cloudburstmc.protocol.bedrock.packet.ResourcePacksInfoPacket;
-import org.cloudburstmc.protocol.bedrock.packet.SetTitlePacket;
-import org.cloudburstmc.protocol.common.PacketSignal;
-import org.geysermc.geyser.Constants;
+import com.nukkitx.protocol.bedrock.BedrockPacket;
+import com.nukkitx.protocol.bedrock.BedrockPacketCodec;
+import com.nukkitx.protocol.bedrock.data.ExperimentData;
+import com.nukkitx.protocol.bedrock.data.ResourcePackType;
+import com.nukkitx.protocol.bedrock.packet.*;
 import org.geysermc.geyser.GeyserImpl;
-import org.geysermc.geyser.api.network.AuthType;
-import org.geysermc.geyser.api.pack.PackCodec;
-import org.geysermc.geyser.api.pack.ResourcePack;
-import org.geysermc.geyser.api.pack.ResourcePackManifest;
 import org.geysermc.geyser.configuration.GeyserConfiguration;
-import org.geysermc.geyser.event.type.SessionLoadResourcePacksEventImpl;
-import org.geysermc.geyser.pack.GeyserResourcePack;
+import org.geysermc.geyser.pack.ResourcePack;
+import org.geysermc.geyser.pack.ResourcePackManifest;
 import org.geysermc.geyser.registry.BlockRegistries;
 import org.geysermc.geyser.registry.Registries;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.session.PendingMicrosoftAuthentication;
+import org.geysermc.geyser.session.auth.AuthType;
 import org.geysermc.geyser.text.GeyserLocale;
 import org.geysermc.geyser.util.LoginEncryptionUtils;
 import org.geysermc.geyser.util.MathUtils;
-import org.geysermc.geyser.util.VersionCheckUtils;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.SeekableByteChannel;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.OptionalInt;
+import java.io.FileInputStream;
+import java.io.InputStream;
 
 public class UpstreamPacketHandler extends LoggingPacketHandler {
-
-    private boolean networkSettingsRequested = false;
-    private final Deque<String> packsToSent = new ArrayDeque<>();
-
-    private SessionLoadResourcePacksEventImpl resourcePackLoadEvent;
 
     public UpstreamPacketHandler(GeyserImpl geyser, GeyserSession session) {
         super(geyser, session);
     }
 
-    private PacketSignal translateAndDefault(BedrockPacket packet) {
-        Registries.BEDROCK_PACKET_TRANSLATORS.translate(packet.getClass(), packet, session);
-        return PacketSignal.HANDLED; // PacketSignal.UNHANDLED will log a WARN publicly
+    private boolean translateAndDefault(BedrockPacket packet) {
+        return Registries.BEDROCK_PACKET_TRANSLATORS.translate(packet.getClass(), packet, session);
     }
 
     @Override
-    PacketSignal defaultHandler(BedrockPacket packet) {
+    boolean defaultHandler(BedrockPacket packet) {
         return translateAndDefault(packet);
     }
 
-    private boolean setCorrectCodec(int protocolVersion) {
-        BedrockCodec packetCodec = GameProtocol.getBedrockCodec(protocolVersion);
-        if (packetCodec == null) {
-            String supportedVersions = GameProtocol.getAllSupportedBedrockVersions();
-            if (protocolVersion > GameProtocol.DEFAULT_BEDROCK_CODEC.getProtocolVersion()) {
-                // Too early to determine session locale
-                String disconnectMessage = GeyserLocale.getLocaleStringLog("geyser.network.outdated.server", supportedVersions);
-                // If the latest release matches this version, then let the user know.
-                OptionalInt latestRelease = VersionCheckUtils.getLatestBedrockRelease();
-                if (latestRelease.isPresent() && latestRelease.getAsInt() == protocolVersion) {
-                    // Random note: don't make the disconnect message too long or Bedrock will cut it off on smaller screens
-                    disconnectMessage += "\n" + GeyserLocale.getLocaleStringLog("geyser.version.new.on_disconnect", Constants.GEYSER_DOWNLOAD_LOCATION);
-                }
-                session.disconnect(disconnectMessage);
-                return false;
-            } else if (protocolVersion < GameProtocol.DEFAULT_BEDROCK_CODEC.getProtocolVersion()) {
-                session.disconnect(GeyserLocale.getLocaleStringLog("geyser.network.outdated.client", supportedVersions));
-                return false;
-            }
-        }
-
-        session.getUpstream().getSession().setCodec(packetCodec);
-        return true;
-    }
-
     @Override
-    public void onDisconnect(String reason) {
-        // Use our own disconnect messages for these reasons
-        if (BedrockDisconnectReasons.CLOSED.equals(reason)) {
-            this.session.getUpstream().getSession().setDisconnectReason(GeyserLocale.getLocaleStringLog("geyser.network.disconnect.closed_by_remote_peer"));
-        } else if (BedrockDisconnectReasons.TIMEOUT.equals(reason)) {
-            this.session.getUpstream().getSession().setDisconnectReason(GeyserLocale.getLocaleStringLog("geyser.network.disconnect.timed_out"));
-        }
-        this.session.disconnect(this.session.getUpstream().getSession().getDisconnectReason());
-    }
-
-    @Override
-    public PacketSignal handle(RequestNetworkSettingsPacket packet) {
-        if (!setCorrectCodec(packet.getProtocolVersion())) {
-            return PacketSignal.HANDLED;
-        }
-
-        // New since 1.19.30 - sent before login packet
-        PacketCompressionAlgorithm algorithm = PacketCompressionAlgorithm.ZLIB;
-
-        NetworkSettingsPacket responsePacket = new NetworkSettingsPacket();
-        responsePacket.setCompressionAlgorithm(algorithm);
-        responsePacket.setCompressionThreshold(512);
-        session.sendUpstreamPacketImmediately(responsePacket);
-
-        session.getUpstream().getSession().setCompression(algorithm);
-        session.getUpstream().getSession().setCompressionLevel(this.geyser.getConfig().getBedrock().getCompressionLevel());
-        networkSettingsRequested = true;
-        return PacketSignal.HANDLED;
-    }
-
-    @Override
-    public PacketSignal handle(LoginPacket loginPacket) {
+    public boolean handle(LoginPacket loginPacket) {
         if (geyser.isShuttingDown()) {
             // Don't allow new players in if we're no longer operating
             session.disconnect(GeyserLocale.getLocaleStringLog("geyser.core.shutdown.kick.message"));
-            return PacketSignal.HANDLED;
+            return true;
         }
 
-        if (!networkSettingsRequested) {
-            session.disconnect(GeyserLocale.getLocaleStringLog("geyser.network.outdated.client", GameProtocol.getAllSupportedBedrockVersions()));
-            return PacketSignal.HANDLED;
+        BedrockPacketCodec packetCodec = MinecraftProtocol.getBedrockCodec(loginPacket.getProtocolVersion());
+        if (packetCodec == null) {
+            String supportedVersions = MinecraftProtocol.getAllSupportedBedrockVersions();
+            if (loginPacket.getProtocolVersion() > MinecraftProtocol.DEFAULT_BEDROCK_CODEC.getProtocolVersion()) {
+                // Too early to determine session locale
+                session.disconnect(GeyserLocale.getLocaleStringLog("geyser.network.outdated.server", supportedVersions));
+                return true;
+            } else if (loginPacket.getProtocolVersion() < MinecraftProtocol.DEFAULT_BEDROCK_CODEC.getProtocolVersion()) {
+                session.disconnect(GeyserLocale.getLocaleStringLog("geyser.network.outdated.client", supportedVersions));
+                return true;
+            }
         }
+
+        session.getUpstream().getSession().setPacketCodec(packetCodec);
 
         // Set the block translation based off of version
         session.setBlockMappings(BlockRegistries.BLOCKS.forVersion(loginPacket.getProtocolVersion()));
@@ -170,7 +92,7 @@ public class UpstreamPacketHandler extends LoggingPacketHandler {
 
         if (session.isClosed()) {
             // Can happen if Xbox validation fails
-            return PacketSignal.HANDLED;
+            return true;
         }
 
         PlayStatusPacket playStatus = new PlayStatusPacket();
@@ -179,29 +101,25 @@ public class UpstreamPacketHandler extends LoggingPacketHandler {
 
         geyser.getSessionManager().addPendingSession(session);
 
-        this.resourcePackLoadEvent = new SessionLoadResourcePacksEventImpl(session, new HashMap<>(Registries.RESOURCE_PACKS.get()));
-        this.geyser.eventBus().fire(this.resourcePackLoadEvent);
-
         ResourcePacksInfoPacket resourcePacksInfo = new ResourcePacksInfoPacket();
-        for (ResourcePack pack : this.resourcePackLoadEvent.resourcePacks()) {
-            PackCodec codec = pack.codec();
-            ResourcePackManifest.Header header = pack.manifest().header();
+        for(ResourcePack resourcePack : ResourcePack.PACKS.values()) {
+            ResourcePackManifest.Header header = resourcePack.getManifest().getHeader();
             resourcePacksInfo.getResourcePackInfos().add(new ResourcePacksInfoPacket.Entry(
-                    header.uuid().toString(), header.version().toString(), codec.size(), pack.contentKey(),
-                    "", header.uuid().toString(), false, false));
+                    header.getUuid().toString(), header.getVersionString(), resourcePack.getFile().length(),
+                            "", "", "", false, false));
         }
         resourcePacksInfo.setForcedToAccept(GeyserImpl.getInstance().getConfig().isForceResourcePacks());
         session.sendUpstreamPacket(resourcePacksInfo);
 
-        GeyserLocale.loadGeyserLocale(session.locale());
-        return PacketSignal.HANDLED;
+        GeyserLocale.loadGeyserLocale(session.getLocale());
+        return true;
     }
 
     @Override
-    public PacketSignal handle(ResourcePackClientResponsePacket packet) {
+    public boolean handle(ResourcePackClientResponsePacket packet) {
         switch (packet.getStatus()) {
             case COMPLETED:
-                if (geyser.getConfig().getRemote().authType() != AuthType.ONLINE) {
+                if (geyser.getConfig().getRemote().getAuthType() != AuthType.ONLINE) {
                     session.authenticate(session.getAuthData().name());
                 } else if (!couldLoginUserByName(session.getAuthData().name())) {
                     // We must spawn the white world
@@ -211,8 +129,24 @@ public class UpstreamPacketHandler extends LoggingPacketHandler {
                 break;
 
             case SEND_PACKS:
-                packsToSent.addAll(packet.getPackIds());
-                sendPackDataInfo(packsToSent.pop());
+                for(String id : packet.getPackIds()) {
+                    ResourcePackDataInfoPacket data = new ResourcePackDataInfoPacket();
+                    String[] packID = id.split("_");
+                    ResourcePack pack = ResourcePack.PACKS.get(packID[0]);
+                    ResourcePackManifest.Header header = pack.getManifest().getHeader();
+
+                    data.setPackId(header.getUuid());
+                    int chunkCount = (int) Math.ceil((int) pack.getFile().length() / (double) ResourcePack.CHUNK_SIZE);
+                    data.setChunkCount(chunkCount);
+                    data.setCompressedPackSize(pack.getFile().length());
+                    data.setMaxChunkSize(ResourcePack.CHUNK_SIZE);
+                    data.setHash(pack.getSha256());
+                    data.setPackVersion(packID[1]);
+                    data.setPremium(false);
+                    data.setType(ResourcePackType.RESOURCE);
+
+                    session.sendUpstreamPacket(data);
+                }
                 break;
 
             case HAVE_ALL_PACKS:
@@ -221,19 +155,14 @@ public class UpstreamPacketHandler extends LoggingPacketHandler {
                 stackPacket.setForcedToAccept(false); // Leaving this as false allows the player to choose to download or not
                 stackPacket.setGameVersion(session.getClientData().getGameVersion());
 
-                for (ResourcePack pack : this.resourcePackLoadEvent.resourcePacks()) {
-                    ResourcePackManifest.Header header = pack.manifest().header();
-                    stackPacket.getResourcePacks().add(new ResourcePackStackPacket.Entry(header.uuid().toString(), header.version().toString(), ""));
+                for (ResourcePack pack : ResourcePack.PACKS.values()) {
+                    ResourcePackManifest.Header header = pack.getManifest().getHeader();
+                    stackPacket.getResourcePacks().add(new ResourcePackStackPacket.Entry(header.getUuid().toString(), header.getVersionString(), ""));
                 }
 
-                if (GeyserImpl.getInstance().getConfig().isAddNonBedrockItems()) {
+                if (session.getItemMappings().getFurnaceMinecartData() != null) {
                     // Allow custom items to work
                     stackPacket.getExperiments().add(new ExperimentData("data_driven_items", true));
-                }
-
-                if (GameProtocol.isPre1_20(session)) {
-                    stackPacket.getExperiments().add(new ExperimentData("next_major_update", true));
-                    stackPacket.getExperiments().add(new ExperimentData("sniffer", true));
                 }
 
                 session.sendUpstreamPacket(stackPacket);
@@ -244,13 +173,13 @@ public class UpstreamPacketHandler extends LoggingPacketHandler {
                 break;
         }
 
-        return PacketSignal.HANDLED;
+        return true;
     }
 
     @Override
-    public PacketSignal handle(ModalFormResponsePacket packet) {
+    public boolean handle(ModalFormResponsePacket packet) {
         session.executeInEventLoop(() -> session.getFormCache().handleResponse(packet));
-        return PacketSignal.HANDLED;
+        return true;
     }
 
     private boolean couldLoginUserByName(String bedrockUsername) {
@@ -283,11 +212,11 @@ public class UpstreamPacketHandler extends LoggingPacketHandler {
     }
 
     @Override
-    public PacketSignal handle(MovePlayerPacket packet) {
+    public boolean handle(MovePlayerPacket packet) {
         if (session.isLoggingIn()) {
             SetTitlePacket titlePacket = new SetTitlePacket();
             titlePacket.setType(SetTitlePacket.Type.ACTIONBAR);
-            titlePacket.setText(GeyserLocale.getPlayerLocaleString("geyser.auth.login.wait", session.locale()));
+            titlePacket.setText(GeyserLocale.getPlayerLocaleString("geyser.auth.login.wait", session.getLocale()));
             titlePacket.setFadeInTime(0);
             titlePacket.setFadeOutTime(1);
             titlePacket.setStayTime(2);
@@ -300,56 +229,28 @@ public class UpstreamPacketHandler extends LoggingPacketHandler {
     }
 
     @Override
-    public PacketSignal handle(ResourcePackChunkRequestPacket packet) {
+    public boolean handle(ResourcePackChunkRequestPacket packet) {
         ResourcePackChunkDataPacket data = new ResourcePackChunkDataPacket();
-        ResourcePack pack = this.resourcePackLoadEvent.getPacks().get(packet.getPackId().toString());
-        PackCodec codec = pack.codec();
+        ResourcePack pack = ResourcePack.PACKS.get(packet.getPackId().toString());
 
         data.setChunkIndex(packet.getChunkIndex());
-        data.setProgress((long) packet.getChunkIndex() * GeyserResourcePack.CHUNK_SIZE);
+        data.setProgress(packet.getChunkIndex() * ResourcePack.CHUNK_SIZE);
         data.setPackVersion(packet.getPackVersion());
         data.setPackId(packet.getPackId());
 
-        int offset = packet.getChunkIndex() * GeyserResourcePack.CHUNK_SIZE;
-        long remainingSize = codec.size() - offset;
-        byte[] packData = new byte[(int) MathUtils.constrain(remainingSize, 0, GeyserResourcePack.CHUNK_SIZE)];
+        int offset = packet.getChunkIndex() * ResourcePack.CHUNK_SIZE;
+        byte[] packData = new byte[(int) MathUtils.constrain(pack.getFile().length() - offset, 0, ResourcePack.CHUNK_SIZE)];
 
-        try (SeekableByteChannel channel = codec.serialize(pack)) {
-            channel.position(offset);
-            channel.read(ByteBuffer.wrap(packData, 0, packData.length));
-        } catch (IOException e) {
+        try (InputStream inputStream = new FileInputStream(pack.getFile())) {
+            inputStream.skip(offset);
+            inputStream.read(packData, 0, packData.length);
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
-        data.setData(Unpooled.wrappedBuffer(packData));
+        data.setData(packData);
 
         session.sendUpstreamPacket(data);
-
-        // Check if it is the last chunk and send next pack in queue when available.
-        if (remainingSize <= GeyserResourcePack.CHUNK_SIZE && !packsToSent.isEmpty()) {
-            sendPackDataInfo(packsToSent.pop());
-        }
-
-        return PacketSignal.HANDLED;
-    }
-
-    private void sendPackDataInfo(String id) {
-        ResourcePackDataInfoPacket data = new ResourcePackDataInfoPacket();
-        String[] packID = id.split("_");
-        ResourcePack pack = this.resourcePackLoadEvent.getPacks().get(packID[0]);
-        PackCodec codec = pack.codec();
-        ResourcePackManifest.Header header = pack.manifest().header();
-
-        data.setPackId(header.uuid());
-        int chunkCount = (int) Math.ceil(codec.size() / (double) GeyserResourcePack.CHUNK_SIZE);
-        data.setChunkCount(chunkCount);
-        data.setCompressedPackSize(codec.size());
-        data.setMaxChunkSize(GeyserResourcePack.CHUNK_SIZE);
-        data.setHash(codec.sha256());
-        data.setPackVersion(packID[1]);
-        data.setPremium(false);
-        data.setType(ResourcePackType.RESOURCES);
-
-        session.sendUpstreamPacket(data);
+        return true;
     }
 }

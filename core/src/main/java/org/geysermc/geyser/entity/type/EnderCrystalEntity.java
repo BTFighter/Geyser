@@ -26,10 +26,11 @@
 package org.geysermc.geyser.entity.type;
 
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.EntityMetadata;
-import org.cloudburstmc.math.vector.Vector3f;
-import org.cloudburstmc.math.vector.Vector3i;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
+import com.nukkitx.math.vector.Vector3f;
+import com.nukkitx.math.vector.Vector3i;
+import com.nukkitx.protocol.bedrock.data.entity.EntityData;
+import com.nukkitx.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.EntityDefinition;
 import org.geysermc.geyser.session.GeyserSession;
 
@@ -49,14 +50,15 @@ public class EnderCrystalEntity extends Entity {
         setFlag(EntityFlag.FIRE_IMMUNE, true);
     }
 
-    public void setBlockTarget(EntityMetadata<Optional<Vector3i>, ?> entityMetadata) {
+    public void setBlockTarget(EntityMetadata<Optional<Position>, ?> entityMetadata) {
         // Show beam
         // Usually performed client-side on Bedrock except for Ender Dragon respawn event
-        Optional<Vector3i> optionalPos = entityMetadata.getValue();
+        Optional<Position> optionalPos = entityMetadata.getValue();
         if (optionalPos.isPresent()) {
-            dirtyMetadata.put(EntityDataTypes.BLOCK_TARGET_POS, optionalPos.get());
+            Position pos = optionalPos.get();
+            dirtyMetadata.put(EntityData.BLOCK_TARGET, Vector3i.from(pos.getX(), pos.getY(), pos.getZ()));
         } else {
-            dirtyMetadata.put(EntityDataTypes.BLOCK_TARGET_POS, Vector3i.ZERO);
+            dirtyMetadata.put(EntityData.BLOCK_TARGET, Vector3i.ZERO);
         }
     }
 }

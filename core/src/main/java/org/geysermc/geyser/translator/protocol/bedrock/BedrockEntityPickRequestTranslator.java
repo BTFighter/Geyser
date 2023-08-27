@@ -25,13 +25,14 @@
 
 package org.geysermc.geyser.translator.protocol.bedrock;
 
-import org.cloudburstmc.protocol.bedrock.packet.EntityPickRequestPacket;
+import com.github.steveice10.mc.protocol.data.game.entity.player.GameMode;
+import com.nukkitx.protocol.bedrock.packet.EntityPickRequestPacket;
 import org.geysermc.geyser.entity.type.BoatEntity;
 import org.geysermc.geyser.entity.type.Entity;
-import org.geysermc.geyser.registry.type.ItemMapping;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
+import org.geysermc.geyser.registry.type.ItemMapping;
 import org.geysermc.geyser.util.InventoryUtils;
 
 import java.util.Locale;
@@ -44,17 +45,14 @@ public class BedrockEntityPickRequestTranslator extends PacketTranslator<EntityP
 
     @Override
     public void translate(GeyserSession session, EntityPickRequestPacket packet) {
-        if (!session.isInstabuild()) {
-            // As of Java Edition 1.19.3
-            return;
-        }
+        if (session.getGameMode() != GameMode.CREATIVE) return; // Apparently Java behavior
         Entity entity = session.getEntityCache().getEntityByGeyserId(packet.getRuntimeEntityId());
         if (entity == null) return;
 
         // Get the corresponding item
         String itemName;
         switch (entity.getDefinition().entityType()) {
-            case BOAT, CHEST_BOAT -> {
+            case BOAT -> {
                 // Include type of boat in the name
                 int variant = ((BoatEntity) entity).getVariant();
                 String typeOfBoat = switch (variant) {
@@ -62,13 +60,10 @@ public class BedrockEntityPickRequestTranslator extends PacketTranslator<EntityP
                     case 2 -> "birch";
                     case 3 -> "jungle";
                     case 4 -> "acacia";
-                    //case 5 -> "cherry"; TODO
-                    case 6 -> "dark_oak";
-                    case 7 -> "mangrove";
-                    //case 8 -> "bamboo";
+                    case 5 -> "dark_oak";
                     default -> "oak";
                 };
-                itemName = typeOfBoat + "_" + entity.getDefinition().entityType().name().toLowerCase(Locale.ROOT);
+                itemName = typeOfBoat + "_boat";
             }
             case LEASH_KNOT -> itemName = "lead";
             case CHEST_MINECART, COMMAND_BLOCK_MINECART, FURNACE_MINECART, HOPPER_MINECART, TNT_MINECART ->

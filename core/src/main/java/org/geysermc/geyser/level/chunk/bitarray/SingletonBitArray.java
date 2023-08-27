@@ -26,12 +26,13 @@
 package org.geysermc.geyser.level.chunk.bitarray;
 
 import io.netty.buffer.ByteBuf;
-import it.unimi.dsi.fastutil.ints.IntArrays;
 
 public class SingletonBitArray implements BitArray {
     public static final SingletonBitArray INSTANCE = new SingletonBitArray();
 
-    private SingletonBitArray() {
+    private static final int[] EMPTY_ARRAY = new int[0];
+
+    public SingletonBitArray() {
     }
 
     @Override
@@ -55,7 +56,7 @@ public class SingletonBitArray implements BitArray {
 
     @Override
     public int[] getWords() {
-        return IntArrays.EMPTY_ARRAY;
+        return EMPTY_ARRAY;
     }
 
     @Override

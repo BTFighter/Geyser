@@ -31,7 +31,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.geysermc.geyser.GeyserImpl;
-import org.geysermc.geyser.api.command.Command;
+import org.geysermc.geyser.command.GeyserCommand;
 
 import java.net.InetSocketAddress;
 import java.util.Iterator;
@@ -49,14 +49,14 @@ public final class GeyserPaperCommandListener implements Listener {
             if (geyserBrigadier != null) {
                 Player player = event.getPlayer();
                 boolean isJavaPlayer = isProbablyJavaPlayer(player);
-                Map<String, Command> commands = GeyserImpl.getInstance().commandManager().getCommands();
+                Map<String, GeyserCommand> commands = GeyserImpl.getInstance().getCommandManager().getCommands();
                 Iterator<? extends CommandNode<?>> it = geyserBrigadier.getChildren().iterator();
 
                 while (it.hasNext()) {
                     CommandNode<?> subnode = it.next();
-                    Command command = commands.get(subnode.getName());
+                    GeyserCommand command = commands.get(subnode.getName());
                     if (command != null) {
-                        if ((command.isBedrockOnly() && isJavaPlayer) || !player.hasPermission(command.permission())) {
+                        if ((command.isBedrockOnly() && isJavaPlayer) || !player.hasPermission(command.getPermission())) {
                             // Remove this from the node as we don't have permission to use it
                             it.remove();
                         }

@@ -44,7 +44,7 @@ public class SettingsUtils {
      */
     public static CustomForm buildForm(GeyserSession session) {
         // Cache the language for cleaner access
-        String language = session.locale();
+        String language = session.getLocale();
 
         CustomForm.Builder builder = CustomForm.builder()
                 .translator(SettingsUtils::translateEntry, language)
@@ -100,7 +100,11 @@ public class SettingsUtils {
                     .translator(MinecraftLocale::getLocaleString); // we need translate gamerules next
 
             WorldManager worldManager = GeyserImpl.getInstance().getWorldManager();
-            for (GameRule gamerule : GameRule.VALUES) {
+            for (GameRule gamerule : GameRule.values()) {
+                if (gamerule.equals(GameRule.UNKNOWN)) {
+                    continue;
+                }
+
                 // Add the relevant form item based on the gamerule type
                 if (Boolean.class.equals(gamerule.getType())) {
                     builder.toggle("gamerule." + gamerule.getJavaID(), worldManager.getGameRuleBool(session, gamerule));
@@ -142,6 +146,10 @@ public class SettingsUtils {
 
             if (showGamerules) {
                 for (GameRule gamerule : GameRule.VALUES) {
+                    if (gamerule.equals(GameRule.UNKNOWN)) {
+                        continue;
+                    }
+
                     if (Boolean.class.equals(gamerule.getType())) {
                         boolean value = response.next();
                         if (value != session.getGeyser().getWorldManager().getGameRuleBool(session, gamerule)) {

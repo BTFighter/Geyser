@@ -25,7 +25,7 @@
 
 package org.geysermc.geyser.level.physics;
 
-import org.cloudburstmc.math.vector.Vector3d;
+import com.nukkitx.math.vector.Vector3d;
 
 public enum Axis {
     X, Y, Z;

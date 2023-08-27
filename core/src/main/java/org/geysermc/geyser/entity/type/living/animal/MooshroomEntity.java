@@ -26,13 +26,11 @@
 package org.geysermc.geyser.entity.type.living.animal;
 
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.type.ObjectEntityMetadata;
-import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
-import org.cloudburstmc.math.vector.Vector3f;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
+import com.nukkitx.math.vector.Vector3f;
+import com.nukkitx.protocol.bedrock.data.entity.EntityData;
 import org.geysermc.geyser.entity.EntityDefinition;
 import org.geysermc.geyser.inventory.GeyserItemStack;
-import org.geysermc.geyser.item.Items;
-import org.geysermc.geyser.item.type.FlowerItem;
+import org.geysermc.geyser.inventory.item.StoredItemMappings;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
@@ -49,38 +47,40 @@ public class MooshroomEntity extends AnimalEntity {
 
     public void setVariant(ObjectEntityMetadata<String> entityMetadata) {
         isBrown = entityMetadata.getValue().equals("brown");
-        dirtyMetadata.put(EntityDataTypes.VARIANT, isBrown ? 1 : 0);
+        dirtyMetadata.put(EntityData.VARIANT, isBrown ? 1 : 0);
     }
 
     @Nonnull
     @Override
-    protected InteractiveTag testMobInteraction(@Nonnull Hand hand, @Nonnull GeyserItemStack itemInHand) {
+    protected InteractiveTag testMobInteraction(@Nonnull GeyserItemStack itemInHand) {
+        StoredItemMappings storedItems = session.getItemMappings().getStoredItems();
         if (!isBaby()) {
-            if (itemInHand.asItem() == Items.BOWL) {
+            if (itemInHand.getJavaId() == storedItems.bowl()) {
                 // Stew
                 return InteractiveTag.MOOSHROOM_MILK_STEW;
-            } else if (isAlive() && itemInHand.asItem() == Items.SHEARS) {
+            } else if (isAlive() && itemInHand.getJavaId() == storedItems.shears()) {
                 // Shear items
                 return InteractiveTag.MOOSHROOM_SHEAR;
             }
         }
-        return super.testMobInteraction(hand, itemInHand);
+        return super.testMobInteraction(itemInHand);
     }
 
     @Nonnull
     @Override
-    protected InteractionResult mobInteract(@Nonnull Hand hand, @Nonnull GeyserItemStack itemInHand) {
+    protected InteractionResult mobInteract(@Nonnull GeyserItemStack itemInHand) {
+        StoredItemMappings storedItems = session.getItemMappings().getStoredItems();
         boolean isBaby = isBaby();
-        if (!isBaby && itemInHand.asItem() == Items.BOWL) {
+        if (!isBaby && itemInHand.getJavaId() == storedItems.bowl()) {
             // Stew
             return InteractionResult.SUCCESS;
-        } else if (!isBaby && isAlive() && itemInHand.asItem() == Items.SHEARS) {
+        } else if (!isBaby && isAlive() && itemInHand.getJavaId() == storedItems.shears()) {
             // Shear items
             return InteractionResult.SUCCESS;
-        } else if (isBrown && session.getTagCache().isSmallFlower(itemInHand) && itemInHand.asItem() instanceof FlowerItem) {
+        } else if (isBrown && session.getTagCache().isSmallFlower(itemInHand) && itemInHand.getMapping(session).isHasSuspiciousStewEffect()) {
             // ?
             return InteractionResult.SUCCESS;
         }
-        return super.mobInteract(hand, itemInHand);
+        return super.mobInteract(itemInHand);
     }
 }

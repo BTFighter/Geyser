@@ -25,11 +25,10 @@
 
 package org.geysermc.geyser.util;
 
-import org.cloudburstmc.protocol.bedrock.packet.SetTitlePacket;
+import com.nukkitx.protocol.bedrock.packet.SetTitlePacket;
 import lombok.Getter;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.session.cache.PreferencesCache;
-import org.geysermc.geyser.text.ChatColor;
 
 import java.util.concurrent.TimeUnit;
 
@@ -132,12 +131,12 @@ public class CooldownUtils {
 
         int darkGrey = (int) Math.floor(10d * cooldown);
         int grey = 10 - darkGrey;
-        StringBuilder builder = new StringBuilder(ChatColor.DARK_GRAY);
+        StringBuilder builder = new StringBuilder("§8");
         while (darkGrey > 0) {
             builder.append("˙");
             darkGrey--;
         }
-        builder.append(ChatColor.GRAY);
+        builder.append("§7");
         while (grey > 0) {
             builder.append("˙");
             grey--;
