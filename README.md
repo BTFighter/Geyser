@@ -47,7 +47,7 @@ There are a few things Geyser is unable to support due to various differences be
 3. Navigate to the Geyser root directory and run `git submodule update --init --recursive`. This command downloads all the needed submodules for Geyser and is a crucial step in this process.
 4. Run `mvn clean install` and locate to the `target` folder.
 
-## Contributing
+## Contributing (For main Geyser)
 Any contributions are appreciated. Please feel free to reach out to us on [Discord](http://discord.geysermc.org/) if
 you're interested in helping out with Geyser.
 
