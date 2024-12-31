@@ -14,24 +14,24 @@ allprojects {
     }
 }
 
-val platforms = setOf(
-    projects.fabric,
-    projects.bungeecord,
-    projects.spigot,
-    projects.sponge,
-    projects.standalone,
-    projects.velocity
-).map { it.dependencyProject }
+// Define platform-specific subprojects
+val platformProjects = setOf(
+    ":fabric",
+    ":bungeecord",
+    ":spigot",
+    ":sponge",
+    ":standalone",
+    ":velocity"
+)
 
 subprojects {
-    apply {
-        plugin("java-library")
-        plugin("io.freefair.lombok")
-        plugin("geyser.build-logic")
-    }
+    apply(plugin = "java-library")
+    apply(plugin = "io.freefair.lombok")
+    apply(plugin = "geyser.build-logic")
 
-    when (this) {
-        in platforms -> plugins.apply("geyser.platform-conventions")
-        else -> plugins.apply("geyser.base-conventions")
-    }
+    // Apply platform or base conventions
+    plugins.apply(
+        if (project.path in platformProjects) "geyser.platform-conventions"
+        else "geyser.base-conventions"
+    )
 }
