@@ -25,11 +25,11 @@
 
 package org.geysermc.geyser.inventory.click;
 
-import com.github.steveice10.mc.protocol.data.game.entity.metadata.ItemStack;
-import com.github.steveice10.mc.protocol.data.game.inventory.ContainerActionType;
-import com.github.steveice10.mc.protocol.data.game.inventory.ContainerType;
-import com.github.steveice10.mc.protocol.data.game.inventory.MoveToHotbarAction;
-import com.github.steveice10.mc.protocol.packet.ingame.serverbound.inventory.ServerboundContainerClickPacket;
+import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
+import org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerActionType;
+import org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerType;
+import org.geysermc.mcprotocollib.protocol.data.game.inventory.MoveToHotbarAction;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.inventory.ServerboundContainerClickPacket;
 import it.unimi.dsi.fastutil.ints.*;
 import org.geysermc.geyser.inventory.GeyserItemStack;
 import org.geysermc.geyser.inventory.Inventory;
@@ -160,6 +160,27 @@ public final class ClickPlan {
             inventory.setItem(simulatedSlot.getIntKey(), simulatedSlot.getValue(), session);
         }
         finished = true;
+    }
+
+    public Inventory getInventory() {
+        return inventory;
+    }
+
+    /**
+     * Test if the item stacks with another item in the specified slot.
+     * This will check the simulated inventory without copying.
+     */
+    public boolean canStack(int slot, GeyserItemStack item) {
+        GeyserItemStack slotItem = simulatedItems.getOrDefault(slot, inventory.getItem(slot));
+        return InventoryUtils.canStack(slotItem, item);
+    }
+
+    /**
+     * Test if the specified slot is empty.
+     * This will check the simulated inventory without copying.
+     */
+    public boolean isEmpty(int slot) {
+        return simulatedItems.getOrDefault(slot, inventory.getItem(slot)).isEmpty();
     }
 
     public GeyserItemStack getItem(int slot) {

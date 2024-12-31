@@ -25,24 +25,23 @@
 
 package org.geysermc.geyser.translator.protocol.bedrock.entity.player;
 
-import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
-import com.github.steveice10.mc.protocol.data.game.entity.player.InteractAction;
-import com.github.steveice10.mc.protocol.data.game.entity.player.PlayerState;
-import com.github.steveice10.mc.protocol.data.game.entity.type.EntityType;
-import com.github.steveice10.mc.protocol.packet.ingame.serverbound.player.ServerboundInteractPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.serverbound.player.ServerboundPlayerCommandPacket;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityLinkData;
-import org.cloudburstmc.protocol.bedrock.data.inventory.ContainerType;
-import org.cloudburstmc.protocol.bedrock.packet.ContainerOpenPacket;
 import org.cloudburstmc.protocol.bedrock.packet.InteractPacket;
 import org.cloudburstmc.protocol.bedrock.packet.SetEntityLinkPacket;
+import org.geysermc.geyser.entity.type.ChestBoatEntity;
 import org.geysermc.geyser.entity.type.Entity;
 import org.geysermc.geyser.entity.type.living.animal.horse.AbstractHorseEntity;
 import org.geysermc.geyser.item.Items;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
+import org.geysermc.geyser.util.InventoryUtils;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.player.InteractAction;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.player.PlayerState;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundInteractPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundPlayerCommandPacket;
 
 import java.util.concurrent.TimeUnit;
 
@@ -92,7 +91,7 @@ public class BedrockInteractTranslator extends PacketTranslator<InteractPacket> 
                             // If the server doesn't agree with our dismount (sends a packet saying we dismounted),
                             // then remount the player.
                             SetEntityLinkPacket linkPacket = new SetEntityLinkPacket();
-                            linkPacket.setEntityLink(new EntityLinkData(vehicleBedrockId, session.getPlayerEntity().getGeyserId(), EntityLinkData.Type.PASSENGER, true, false));
+                            linkPacket.setEntityLink(new EntityLinkData(vehicleBedrockId, session.getPlayerEntity().getGeyserId(), EntityLinkData.Type.PASSENGER, true, false, 0f));
                             session.sendUpstreamPacket(linkPacket);
                         }
                     }, 1, TimeUnit.SECONDS));
@@ -120,22 +119,14 @@ public class BedrockInteractTranslator extends PacketTranslator<InteractPacket> 
             case OPEN_INVENTORY:
                 if (session.getOpenInventory() == null) {
                     Entity ridingEntity = session.getPlayerEntity().getVehicle();
-                    if (ridingEntity instanceof AbstractHorseEntity || (ridingEntity != null && ridingEntity.getDefinition().entityType() == EntityType.CHEST_BOAT)) {
+                    if (ridingEntity instanceof AbstractHorseEntity || ridingEntity instanceof ChestBoatEntity) {
                         // This mob has an inventory of its own that we should open instead.
                         ServerboundPlayerCommandPacket openVehicleWindowPacket = new ServerboundPlayerCommandPacket(session.getPlayerEntity().getEntityId(), PlayerState.OPEN_VEHICLE_INVENTORY);
                         session.sendDownstreamGamePacket(openVehicleWindowPacket);
                     } else {
-                        session.setOpenInventory(session.getPlayerInventory());
-
-                        ContainerOpenPacket containerOpenPacket = new ContainerOpenPacket();
-                        containerOpenPacket.setId((byte) 0);
-                        containerOpenPacket.setType(ContainerType.INVENTORY);
-                        containerOpenPacket.setUniqueEntityId(-1);
-                        containerOpenPacket.setBlockPosition(entity.getPosition().toInt());
-                        session.sendUpstreamPacket(containerOpenPacket);
+                        InventoryUtils.openInventory(session, session.getPlayerInventory());
                     }
                 }
-                break;
         }
     }
 }

@@ -25,9 +25,9 @@
 
 package org.geysermc.geyser.translator.protocol.java.inventory;
 
-import com.github.steveice10.mc.protocol.data.game.entity.metadata.ItemStack;
-import com.github.steveice10.mc.protocol.data.game.inventory.VillagerTrade;
-import com.github.steveice10.mc.protocol.packet.ingame.clientbound.inventory.ClientboundMerchantOffersPacket;
+import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
+import org.geysermc.mcprotocollib.protocol.data.game.inventory.VillagerTrade;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.inventory.ClientboundMerchantOffersPacket;
 import org.cloudburstmc.nbt.NbtMap;
 import org.cloudburstmc.nbt.NbtMapBuilder;
 import org.cloudburstmc.nbt.NbtType;
@@ -41,9 +41,10 @@ import org.geysermc.geyser.inventory.MerchantContainer;
 import org.geysermc.geyser.registry.Registries;
 import org.geysermc.geyser.registry.type.ItemMapping;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.geyser.translator.inventory.item.ItemTranslator;
+import org.geysermc.geyser.translator.item.ItemTranslator;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
+import org.geysermc.geyser.util.InventoryUtils;
 import org.geysermc.geyser.util.MathUtils;
 
 import java.util.ArrayList;
@@ -158,21 +159,21 @@ public class JavaMerchantOffersTranslator extends PacketTranslator<ClientboundMe
     }
 
     private static NbtMap getItemTag(GeyserSession session, ItemStack stack) {
-        if (stack == null || stack.getAmount() <= 0) { // Negative item counts appear as air on Java
+        if (InventoryUtils.isEmpty(stack)) { // Negative item counts appear as air on Java
             return NbtMap.EMPTY;
         }
         return getItemTag(session, stack, session.getItemMappings().getMapping(stack), stack.getAmount());
     }
 
     private static NbtMap getItemTag(GeyserSession session, ItemStack stack, int specialPrice, int demand, float priceMultiplier) {
-        if (stack == null || stack.getAmount() <= 0) { // Negative item counts appear as air on Java
+        if (InventoryUtils.isEmpty(stack)) { // Negative item counts appear as air on Java
             return NbtMap.EMPTY;
         }
         ItemMapping mapping = session.getItemMappings().getMapping(stack);
 
         // Bedrock expects all price adjustments to be applied to the item's count
         int count = stack.getAmount() + ((int) Math.max(Math.floor(stack.getAmount() * demand * priceMultiplier), 0)) + specialPrice;
-        count = MathUtils.constrain(count, 1, Registries.JAVA_ITEMS.get().get(stack.getId()).maxStackSize());
+        count = MathUtils.constrain(count, 1, Registries.JAVA_ITEMS.get().get(stack.getId()).defaultMaxStackSize());
 
         return getItemTag(session, stack, mapping, count);
     }

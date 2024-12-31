@@ -41,6 +41,7 @@ import org.cloudburstmc.protocol.bedrock.packet.InventorySlotPacket;
 import org.geysermc.geyser.inventory.BedrockContainerSlot;
 import org.geysermc.geyser.inventory.Inventory;
 import org.geysermc.geyser.inventory.updater.UIInventoryUpdater;
+import org.geysermc.geyser.level.block.Blocks;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.util.InventoryUtils;
 
@@ -57,12 +58,12 @@ public class OldSmithingTableTranslator extends AbstractBlockInventoryTranslator
     private static final IntFunction<ItemData> UPGRADE_TEMPLATE = InventoryUtils.getUpgradeTemplate();
 
     private OldSmithingTableTranslator() {
-        super(3, "minecraft:smithing_table", ContainerType.SMITHING_TABLE, UIInventoryUpdater.INSTANCE);
+        super(3, Blocks.SMITHING_TABLE, ContainerType.SMITHING_TABLE, UIInventoryUpdater.INSTANCE);
     }
 
     @Override
     public int bedrockSlotToJava(ItemStackRequestSlotData slotInfoData) {
-        return switch (slotInfoData.getContainer()) {
+        return switch (slotInfoData.getContainerName().getContainer()) {
             case SMITHING_TABLE_INPUT -> 0;
             case SMITHING_TABLE_MATERIAL -> 1;
             case SMITHING_TABLE_RESULT, CREATED_OUTPUT -> 2;
@@ -129,7 +130,7 @@ public class OldSmithingTableTranslator extends AbstractBlockInventoryTranslator
     }
 
     private boolean isInvalidAction(ItemStackRequestSlotData slotData) {
-        return slotData.getContainer().equals(ContainerSlotType.SMITHING_TABLE_TEMPLATE);
+        return slotData.getContainerName().getContainer().equals(ContainerSlotType.SMITHING_TABLE_TEMPLATE);
     }
 
     @Override

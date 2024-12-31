@@ -3,37 +3,41 @@ name: Build
 on:
   workflow_dispatch:
   push:
+    branches-ignore:
+      - 'gh-readonly-queue/**'
     paths-ignore:
       - '.github/ISSUE_TEMPLATE/*.yml'
-      - '.github/actions/pullrequest.yml'
-      - '.idea/copyright/*.xml' 
+      - '.github/workflows/build-remote.yml'
+      - '.github/workflows/preview.yml'
+      - '.github/workflows/pull-request.yml'
+      - '.idea/copyright/*.xml'
       - '.gitignore'
       - 'CONTRIBUTING.md'
       - 'LICENSE'
       - 'Jenkinsfile '
       - 'README.md'
-      - 'licenseheader.txt'
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository and submodules
-        # See https://github.com/actions/checkout/commits
-        uses: actions/checkout@72f2cec99f417b1a1c5e2e88945068983b7965f9
+      - name: Get Release Info
+        id: release-info
+        uses: GeyserMC/actions/previous-release@master
         with:
-          submodules: recursive
+          data: ${{ vars.RELEASEACTION_PREVRELEASE }}
 
-      - name: Validate Gradle Wrapper
-        # See https://github.com/gradle/wrapper-validation-action/commits
-        uses: gradle/wrapper-validation-action@56b90f209b02bf6d1deae490e9ef18b21a389cd4
-
-        # See https://github.com/actions/setup-java/commits
-      - uses: actions/setup-java@4075bfc1b51bf22876335ae1cd589602d60d8758
+      - name: Setup Gradle
+        uses: GeyserMC/actions/setup-gradle-composite@master
         with:
-          java-version: 17
-          distribution: temurin
+          setup-java_java-version: 21
+
+      - name: Build Geyser
+        run: ./gradlew build
+        env:
+          BUILD_NUMBER: ${{ steps.release-info.outputs.curentRelease }}
           
+<<<<<<< HEAD
       - name: Build
         # See https://github.com/gradle/gradle-build-action/commits
         uses: gradle/gradle-build-action@3bfe3a46584a206fb8361cdedd0647b0c4204232
@@ -48,3 +52,86 @@ jobs:
           name: Geyser Standalone
           path: bootstrap/standalone/build/libs/Geyser-Standalone.jar
           if-no-files-found: error
+=======
+      - name: Archive Artifacts
+        uses: GeyserMC/actions/upload-multi-artifact@master
+        if: success()
+        with:
+          artifacts: |
+            bootstrap/mod/fabric/build/libs/Geyser-Fabric.jar
+            bootstrap/mod/neoforge/build/libs/Geyser-NeoForge.jar
+            bootstrap/standalone/build/libs/Geyser-Standalone.jar
+            bootstrap/spigot/build/libs/Geyser-Spigot.jar
+            bootstrap/bungeecord/build/libs/Geyser-BungeeCord.jar
+            bootstrap/velocity/build/libs/Geyser-Velocity.jar
+            bootstrap/viaproxy/build/libs/Geyser-ViaProxy.jar
+
+      - name: Publish to Maven Repository
+        if: ${{ success() && github.repository == 'GeyserMC/Geyser' && github.ref_name == 'master' }}
+        run: ./gradlew publish
+        env:
+          BUILD_NUMBER: ${{ steps.release-info.outputs.curentRelease }}
+          ORG_GRADLE_PROJECT_geysermcUsername: ${{ vars.DEPLOY_USER }}
+          ORG_GRADLE_PROJECT_geysermcPassword: ${{ secrets.DEPLOY_PASS }}
+        
+      - name: Get Version
+        if: ${{ (success() || failure()) && github.repository == 'GeyserMC/Geyser' }}
+        id: get-version
+        run: |
+          version=$(cat gradle.properties | grep -o "version=[0-9\\.]*" | cut -d"=" -f2)
+          echo "VERSION=${version}" >> $GITHUB_OUTPUT
+
+      - name: Get Release Metadata
+        if: ${{ (success() || failure()) && github.repository == 'GeyserMC/Geyser' }}
+        uses: GeyserMC/actions/release@master
+        id: metadata
+        with:
+          appID: ${{ secrets.RELEASE_APP_ID }}
+          appPrivateKey: ${{ secrets.RELEASE_APP_PK }}
+          files: |
+            bungeecord:bootstrap/bungeecord/build/libs/Geyser-BungeeCord.jar
+            fabric:bootstrap/mod/fabric/build/libs/Geyser-Fabric.jar
+            neoforge:bootstrap/mod/neoforge/build/libs/Geyser-NeoForge.jar
+            spigot:bootstrap/spigot/build/libs/Geyser-Spigot.jar
+            standalone:bootstrap/standalone/build/libs/Geyser-Standalone.jar
+            velocity:bootstrap/velocity/build/libs/Geyser-Velocity.jar
+            viaproxy:bootstrap/viaproxy/build/libs/Geyser-ViaProxy.jar
+          releaseEnabled: false
+          saveMetadata: true
+          releaseProject: 'geyser'
+          releaseVersion: ${{ steps.get-version.outputs.VERSION }}
+
+      - name: Publish to Downloads API
+        if: ${{ success() && github.repository == 'GeyserMC/Geyser' && github.ref_name == 'master' }}
+        uses: GeyserMC/actions/upload-release@master
+        with:
+          username: ${{ vars.DOWNLOADS_USERNAME }}
+          privateKey: ${{ secrets.DOWNLOADS_PRIVATE_KEY }}
+          host: ${{ secrets.DOWNLOADS_SERVER_IP }}
+          files: |
+            bootstrap/bungeecord/build/libs/Geyser-BungeeCord.jar
+            bootstrap/mod/fabric/build/libs/Geyser-Fabric.jar
+            bootstrap/mod/neoforge/build/libs/Geyser-NeoForge.jar
+            bootstrap/spigot/build/libs/Geyser-Spigot.jar
+            bootstrap/standalone/build/libs/Geyser-Standalone.jar
+            bootstrap/velocity/build/libs/Geyser-Velocity.jar
+            bootstrap/viaproxy/build/libs/Geyser-ViaProxy.jar
+          changelog: ${{ steps.metadata.outputs.body }}
+
+      - name: Publish to Modrinth
+        if: ${{ success() && github.repository == 'GeyserMC/Geyser' && github.ref_name == 'master' }}
+        env:
+          CHANGELOG: ${{ steps.metadata.outputs.body }}
+          BUILD_NUMBER: ${{ steps.release-info.outputs.curentRelease }}
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+        run: ./gradlew modrinth
+
+      - name: Notify Discord
+        if: ${{ (success() || failure()) && github.repository == 'GeyserMC/Geyser' }}
+        uses: GeyserMC/actions/notify-discord@master
+        with:
+          discordWebhook: ${{ secrets.DISCORD_WEBHOOK }}
+          status: ${{ job.status }}
+          body: ${{ steps.metadata.outputs.body }}
+          includeDownloads: ${{ github.ref_name == 'master' }}
+>>>>>>> parent of 5255b844e (Upload old version)

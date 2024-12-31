@@ -25,9 +25,6 @@
 
 package org.geysermc.geyser.translator.inventory;
 
-import com.github.steveice10.mc.protocol.packet.ingame.serverbound.inventory.ServerboundContainerButtonClickPacket;
-import com.github.steveice10.opennbt.tag.builtin.CompoundTag;
-import com.github.steveice10.opennbt.tag.builtin.ListTag;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import org.cloudburstmc.nbt.NbtMap;
@@ -48,9 +45,13 @@ import org.geysermc.geyser.inventory.SlotType;
 import org.geysermc.geyser.inventory.updater.UIInventoryUpdater;
 import org.geysermc.geyser.item.type.BannerItem;
 import org.geysermc.geyser.item.type.DyeItem;
+import org.geysermc.geyser.level.block.Blocks;
 import org.geysermc.geyser.session.GeyserSession;
+import org.geysermc.mcprotocollib.protocol.data.game.item.component.BannerPatternLayer;
+import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentType;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.inventory.ServerboundContainerButtonClickPacket;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 
 public class LoomInventoryTranslator extends AbstractBlockInventoryTranslator {
@@ -99,7 +100,7 @@ public class LoomInventoryTranslator extends AbstractBlockInventoryTranslator {
     }
 
     public LoomInventoryTranslator() {
-        super(4, "minecraft:loom[facing=north]", ContainerType.LOOM, UIInventoryUpdater.INSTANCE);
+        super(4, Blocks.LOOM, ContainerType.LOOM, UIInventoryUpdater.INSTANCE);
     }
 
     @Override
@@ -153,26 +154,14 @@ public class LoomInventoryTranslator extends AbstractBlockInventoryTranslator {
 
         GeyserItemStack inputCopy = inventory.getItem(0).copy(1);
         inputCopy.setNetId(session.getNextItemNetId());
-        // Add the pattern manually, for better item synchronization
-        if (inputCopy.getNbt() == null) {
-            inputCopy.setNbt(new CompoundTag(""));
-        }
-        CompoundTag blockEntityTag = inputCopy.getNbt().get("BlockEntityTag");
-        CompoundTag javaBannerPattern = BannerItem.getJavaBannerPattern(pattern);
-
-        if (blockEntityTag != null) {
-            ListTag patternsList = blockEntityTag.get("Patterns");
-            if (patternsList != null) {
-                patternsList.add(javaBannerPattern);
-            } else {
-                patternsList = new ListTag("Patterns", Collections.singletonList(javaBannerPattern));
-                blockEntityTag.put(patternsList);
+        BannerPatternLayer bannerPatternLayer = BannerItem.getJavaBannerPattern(session, pattern); // TODO
+        if (bannerPatternLayer != null) {
+            List<BannerPatternLayer> patternsList = inputCopy.getComponent(DataComponentType.BANNER_PATTERNS);
+            if (patternsList == null) {
+                patternsList = new ArrayList<>();
             }
-        } else {
-            blockEntityTag = new CompoundTag("BlockEntityTag");
-            ListTag patternsList = new ListTag("Patterns", Collections.singletonList(javaBannerPattern));
-            blockEntityTag.put(patternsList);
-            inputCopy.getNbt().put(blockEntityTag);
+            patternsList.add(bannerPatternLayer);
+            inputCopy.getOrCreateComponents().put(DataComponentType.BANNER_PATTERNS, patternsList);
         }
 
         // Set the new item as the output
@@ -183,7 +172,7 @@ public class LoomInventoryTranslator extends AbstractBlockInventoryTranslator {
 
     @Override
     public int bedrockSlotToJava(ItemStackRequestSlotData slotInfoData) {
-        return switch (slotInfoData.getContainer()) {
+        return switch (slotInfoData.getContainerName().getContainer()) {
             case LOOM_INPUT -> 0;
             case LOOM_DYE -> 1;
             case LOOM_MATERIAL -> 2;
