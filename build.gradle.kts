@@ -6,11 +6,7 @@ plugins {
     id("io.freefair.lombok") version "6.3.0" apply false
 }
 
-allprojects {
-    group = properties["group"] as String + "." + properties["id"] as String
-    version = properties["version"] as String
-    description = properties["description"] as String
-}
+
 
 java {
     toolchain {
