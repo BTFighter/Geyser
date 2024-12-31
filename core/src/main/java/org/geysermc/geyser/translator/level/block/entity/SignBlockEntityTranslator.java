@@ -25,17 +25,15 @@
 
 package org.geysermc.geyser.translator.level.block.entity;
 
+import com.github.steveice10.mc.protocol.data.game.level.block.BlockEntityType;
+import com.github.steveice10.opennbt.tag.builtin.CompoundTag;
+import com.github.steveice10.opennbt.tag.builtin.ListTag;
+import com.github.steveice10.opennbt.tag.builtin.Tag;
 import org.cloudburstmc.nbt.NbtMap;
 import org.cloudburstmc.nbt.NbtMapBuilder;
-import org.cloudburstmc.nbt.NbtType;
-import org.geysermc.geyser.level.block.type.BlockState;
-import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.text.ChatColor;
 import org.geysermc.geyser.translator.text.MessageTranslator;
 import org.geysermc.geyser.util.SignUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockEntityType;
-
-import java.util.List;
 
 @BlockEntity(type = BlockEntityType.SIGN)
 public class SignBlockEntityTranslator extends BlockEntityTranslator {
@@ -74,21 +72,25 @@ public class SignBlockEntityTranslator extends BlockEntityTranslator {
     }
 
     @Override
-    public void translateTag(GeyserSession session, NbtMapBuilder bedrockNbt, NbtMap javaNbt, BlockState blockState) {
-        bedrockNbt.putCompound("FrontText", translateSide(javaNbt.getCompound("front_text")));
-        bedrockNbt.putCompound("BackText", translateSide(javaNbt.getCompound("back_text")));
-        bedrockNbt.putBoolean("IsWaxed", javaNbt.getBoolean("is_waxed"));
+    public void translateTag(NbtMapBuilder builder, CompoundTag tag, int blockState) {
+        builder.putCompound("FrontText", translateSide(tag.get("front_text")));
+        builder.putCompound("BackText", translateSide(tag.get("back_text")));
+        var waxed = tag.get("is_waxed");
+        builder.putBoolean("IsWaxed", waxed != null && waxed.getValue() instanceof Number number && number.byteValue() != 0);
     }
 
-    private NbtMap translateSide(NbtMap javaNbt) {
+    private NbtMap translateSide(Tag tag) {
+        if (!(tag instanceof CompoundTag signData)) {
+            return NbtMap.EMPTY;
+        }
         NbtMapBuilder builder = NbtMap.builder();
 
         StringBuilder signText = new StringBuilder();
-        List<String> messages = javaNbt.getList("messages", NbtType.STRING);
-        if (!messages.isEmpty()) {
-            var it = messages.iterator();
+        Tag messages = signData.get("messages");
+        if (messages instanceof ListTag listTag) {
+            var it = listTag.iterator();
             while (it.hasNext()) {
-                String signLine = it.next();
+                String signLine = (String) it.next().getValue();
                 signLine = MessageTranslator.convertMessageLenient(signLine);
 
                 // Check the character width on the sign to ensure there is no overflow that is usually hidden
@@ -131,13 +133,13 @@ public class SignBlockEntityTranslator extends BlockEntityTranslator {
         builder.putString("Text", signText.toString());
 
         // Java Edition 1.14 added the ability to change the text color of the whole sign using dye
-        String color = javaNbt.getString("color", null);
+        Tag color = signData.get("color");
         if (color != null) {
-            builder.putInt("SignTextColor", getBedrockSignColor(color));
+            builder.putInt("SignTextColor", getBedrockSignColor(color.getValue().toString()));
         }
 
         // Glowing text
-        boolean isGlowing = javaNbt.getBoolean("has_glowing_text");
+        boolean isGlowing = getOrDefault(signData.get("has_glowing_text"), (byte) 0) != (byte) 0;
         builder.putBoolean("IgnoreLighting", isGlowing);
         return builder.build();
     }

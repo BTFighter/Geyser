@@ -36,7 +36,7 @@ import org.geysermc.geyser.session.GeyserSession;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
-public class SquidEntity extends AgeableWaterEntity implements Tickable {
+public class SquidEntity extends WaterEntity implements Tickable {
     private float targetPitch;
     private float targetYaw;
 
@@ -122,7 +122,7 @@ public class SquidEntity extends AgeableWaterEntity implements Tickable {
     }
 
     @Override
-    public boolean canBeLeashed() {
+    protected boolean canBeLeashed() {
         return isNotLeashed();
     }
 

@@ -25,44 +25,40 @@
 
 package org.geysermc.geyser.translator.level.block.entity;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
-import org.cloudburstmc.nbt.NbtMap;
+import com.github.steveice10.mc.protocol.data.game.level.block.BlockEntityType;
+import com.github.steveice10.opennbt.tag.builtin.CompoundTag;
+import com.github.steveice10.opennbt.tag.builtin.ListTag;
+import com.github.steveice10.opennbt.tag.builtin.Tag;
 import org.cloudburstmc.nbt.NbtMapBuilder;
-import org.cloudburstmc.nbt.NbtType;
 import org.geysermc.geyser.item.type.BannerItem;
-import org.geysermc.geyser.level.block.type.BannerBlock;
-import org.geysermc.geyser.level.block.type.BlockState;
-import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockEntityType;
-
-import java.util.List;
+import org.geysermc.geyser.level.block.BlockStateValues;
 
 @BlockEntity(type = BlockEntityType.BANNER)
 public class BannerBlockEntityTranslator extends BlockEntityTranslator implements RequiresBlockState {
     @Override
-    public void translateTag(GeyserSession session, NbtMapBuilder bedrockNbt, @Nullable NbtMap javaNbt, BlockState blockState) {
-        if (blockState.block() instanceof BannerBlock banner) {
-            bedrockNbt.putInt("Base", 15 - banner.dyeColor());
+    public void translateTag(NbtMapBuilder builder, CompoundTag tag, int blockState) {
+        int bannerColor = BlockStateValues.getBannerColor(blockState);
+        if (bannerColor != -1) {
+            builder.put("Base", 15 - bannerColor);
         }
 
-        if (javaNbt == null) {
+        if (tag == null) {
             return;
         }
 
-        List<NbtMap> patterns = javaNbt.getList("patterns", NbtType.COMPOUND);
-        if (!patterns.isEmpty()) {
-            if (BannerItem.isOminous(patterns)) {
+        if (tag.get("Patterns") instanceof ListTag patterns) {
+            if (patterns.equals(BannerItem.OMINOUS_BANNER_PATTERN)) {
                 // This is an ominous banner; don't try to translate the raw patterns (it doesn't translate correctly)
                 // and tell the Bedrock client that this is an ominous banner
-                bedrockNbt.putInt("Type", 1);
+                builder.putInt("Type", 1);
             } else {
-                bedrockNbt.putList("Patterns", NbtType.COMPOUND, BannerItem.convertBannerPattern(patterns));
+                builder.put("Patterns", BannerItem.convertBannerPattern(patterns));
             }
         }
 
-        String customName = javaNbt.getString("CustomName", null);
+        Tag customName = tag.get("CustomName");
         if (customName != null) {
-            bedrockNbt.putString("CustomName", customName);
+            builder.put("CustomName", customName.getValue());
         }
     }
 }

@@ -25,7 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.animal;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.type.IntEntityMetadata;
 import org.cloudburstmc.math.vector.Vector3f;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityEventType;
@@ -34,10 +35,6 @@ import org.cloudburstmc.protocol.bedrock.packet.EntityEventPacket;
 import org.geysermc.geyser.entity.EntityDefinition;
 import org.geysermc.geyser.item.type.Item;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.geyser.session.cache.tags.ItemTag;
-import org.geysermc.geyser.session.cache.tags.Tag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
 
 import java.util.UUID;
 
@@ -60,8 +57,7 @@ public class BeeEntity extends AnimalEntity {
         // If the bee has stung
         dirtyMetadata.put(EntityDataTypes.MARK_VARIANT, (xd & 0x04) == 0x04 ? 1 : 0);
         // If the bee has nectar or not
-        propertyManager.add("minecraft:has_nectar", (xd & 0x08) == 0x08);
-        updateBedrockEntityProperties();
+        setFlag(EntityFlag.POWERED, (xd & 0x08) == 0x08);
     }
 
     public void setAngerTime(IntEntityMetadata entityMetadata) {
@@ -70,8 +66,7 @@ public class BeeEntity extends AnimalEntity {
     }
 
     @Override
-    @Nullable
-    protected Tag<Item> getFoodTag() {
-        return ItemTag.BEE_FOOD;
+    public boolean canEat(Item item) {
+        return session.getTagCache().isFlower(item);
     }
 }

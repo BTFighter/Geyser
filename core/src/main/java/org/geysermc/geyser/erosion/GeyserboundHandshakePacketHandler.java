@@ -42,6 +42,7 @@ public final class GeyserboundHandshakePacketHandler extends AbstractGeyserbound
     public void handleHandshake(GeyserboundHandshakePacket packet) {
         boolean useTcp = packet.getTransportType().getSocketAddress() == null;
         GeyserboundPacketHandlerImpl handler = new GeyserboundPacketHandlerImpl(session, useTcp ? new GeyserErosionPacketSender(session) : new NettyPacketSender<>());
+        session.setErosionHandler(handler);
         if (!useTcp) {
             if (session.getGeyser().getErosionUnixListener() == null) {
                 session.disconnect("Erosion configurations using Unix socket handling are not supported on this hardware!");
@@ -51,7 +52,6 @@ public final class GeyserboundHandshakePacketHandler extends AbstractGeyserbound
         } else {
             handler.onConnect();
         }
-        session.setErosionHandler(handler);
         session.ensureInEventLoop(() -> session.getChunkCache().clear());
     }
 

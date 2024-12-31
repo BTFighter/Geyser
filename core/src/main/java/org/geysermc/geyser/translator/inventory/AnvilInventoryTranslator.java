@@ -25,6 +25,7 @@
 
 package org.geysermc.geyser.translator.inventory;
 
+import com.github.steveice10.mc.protocol.data.game.inventory.ContainerType;
 import org.cloudburstmc.protocol.bedrock.data.inventory.ContainerSlotType;
 import org.cloudburstmc.protocol.bedrock.data.inventory.itemstack.request.ItemStackRequest;
 import org.cloudburstmc.protocol.bedrock.data.inventory.itemstack.request.ItemStackRequestSlotData;
@@ -37,16 +38,14 @@ import org.geysermc.geyser.inventory.BedrockContainerSlot;
 import org.geysermc.geyser.inventory.Inventory;
 import org.geysermc.geyser.inventory.PlayerInventory;
 import org.geysermc.geyser.inventory.updater.AnvilInventoryUpdater;
-import org.geysermc.geyser.level.block.Blocks;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerType;
 
 import java.util.Objects;
 
 public class AnvilInventoryTranslator extends AbstractBlockInventoryTranslator {
     public AnvilInventoryTranslator() {
-        super(3, Blocks.ANVIL, org.cloudburstmc.protocol.bedrock.data.inventory.ContainerType.ANVIL, AnvilInventoryUpdater.INSTANCE,
-                Blocks.CHIPPED_ANVIL, Blocks.DAMAGED_ANVIL);
+        super(3, "minecraft:anvil[facing=north]", org.cloudburstmc.protocol.bedrock.data.inventory.ContainerType.ANVIL, AnvilInventoryUpdater.INSTANCE,
+                "minecraft:chipped_anvil", "minecraft:damaged_anvil");
     }
 
     @Override
@@ -73,7 +72,7 @@ public class AnvilInventoryTranslator extends AbstractBlockInventoryTranslator {
 
     @Override
     public int bedrockSlotToJava(ItemStackRequestSlotData slotInfoData) {
-        return switch (slotInfoData.getContainerName().getContainer()) {
+        return switch (slotInfoData.getContainer()) {
             case ANVIL_INPUT -> 0;
             case ANVIL_MATERIAL -> 1;
             case ANVIL_RESULT, CREATED_OUTPUT -> 2;

@@ -35,8 +35,6 @@ import org.cloudburstmc.protocol.bedrock.data.BlockPropertyData;
 import org.cloudburstmc.protocol.bedrock.data.definitions.BlockDefinition;
 import org.cloudburstmc.protocol.common.DefinitionRegistry;
 import org.geysermc.geyser.api.block.custom.CustomBlockState;
-import org.geysermc.geyser.level.block.type.Block;
-import org.geysermc.geyser.level.block.type.BlockState;
 
 import java.util.List;
 import java.util.Map;
@@ -44,19 +42,13 @@ import java.util.Set;
 
 @Builder
 @Value
-public class BlockMappings implements DefinitionRegistry<BlockDefinition> {
+public class BlockMappings implements DefinitionRegistry<GeyserBedrockBlock> {
     GeyserBedrockBlock bedrockAir;
     BlockDefinition bedrockWater;
     BlockDefinition bedrockMovingBlock;
 
     GeyserBedrockBlock[] javaToBedrockBlocks;
     GeyserBedrockBlock[] javaToVanillaBedrockBlocks;
-
-    /**
-     * Java block ID -> Bedrock block ID (without minecraft:), IF they are different
-     * While Bedrock is progressing slowly through their flattening, some Bedrock identifiers may differ.
-     */
-    Int2ObjectMap<String> javaToBedrockIdentifiers;
 
     Map<NbtMap, GeyserBedrockBlock> stateDefinitionMap;
     GeyserBedrockBlock[] bedrockRuntimeMap;
@@ -66,10 +58,9 @@ public class BlockMappings implements DefinitionRegistry<BlockDefinition> {
     BlockDefinition mobSpawnerBlock;
 
     Map<NbtMap, BlockDefinition> itemFrames;
-    Map<Block, NbtMap> flowerPotBlocks;
+    Map<String, NbtMap> flowerPotBlocks;
 
     Set<BlockDefinition> jigsawStates;
-    Map<String, BlockDefinition> structureBlockStates;
 
     List<BlockPropertyData> blockProperties;
     Object2ObjectMap<CustomBlockState, GeyserBedrockBlock> customBlockStateDefinitions;
@@ -84,14 +75,6 @@ public class BlockMappings implements DefinitionRegistry<BlockDefinition> {
             return bedrockAir;
         }
         return this.javaToBedrockBlocks[javaState];
-    }
-
-    public GeyserBedrockBlock getBedrockBlock(BlockState javaState) {
-        return this.getBedrockBlock(javaState.javaId());
-    }
-
-    public GeyserBedrockBlock getVanillaBedrockBlock(BlockState javaState) {
-        return getVanillaBedrockBlock(javaState.javaId());
     }
 
     public GeyserBedrockBlock getVanillaBedrockBlock(int javaState) {
@@ -113,10 +96,6 @@ public class BlockMappings implements DefinitionRegistry<BlockDefinition> {
         return false;
     }
 
-    public BlockDefinition getStructureBlockFromMode(String mode) {
-        return structureBlockStates.get(mode);
-    }
-
     @Override
     public @Nullable GeyserBedrockBlock getDefinition(int bedrockId) {
         if (bedrockId < 0 || bedrockId >= this.bedrockRuntimeMap.length) {
@@ -134,7 +113,7 @@ public class BlockMappings implements DefinitionRegistry<BlockDefinition> {
     }
 
     @Override
-    public boolean isRegistered(BlockDefinition bedrockBlock) {
+    public boolean isRegistered(GeyserBedrockBlock bedrockBlock) {
         return getDefinition(bedrockBlock.getRuntimeId()) == bedrockBlock;
     }
 }

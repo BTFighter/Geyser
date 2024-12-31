@@ -32,9 +32,7 @@ import org.geysermc.geyser.util.AssetUtils;
 import org.geysermc.geyser.util.FileUtils;
 import org.geysermc.geyser.util.WebUtils;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -198,6 +196,7 @@ public class MinecraftLocale {
                 Map.Entry<String, JsonNode> entry = localeIterator.next();
                 langMap.put(entry.getKey(), entry.getValue().asText());
             }
+            localeStream.close();
             return langMap;
         } catch (FileNotFoundException e){
             throw new AssertionError(GeyserLocale.getLocaleStringLog("geyser.locale.fail.file", locale, e.getMessage()));

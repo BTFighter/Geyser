@@ -130,7 +130,7 @@ public class CustomSkullRegistryPopulator {
             }
         });
 
-        if (!BlockRegistries.CUSTOM_SKULLS.get().isEmpty()) {
+        if (BlockRegistries.CUSTOM_SKULLS.get().size() != 0) {
             GeyserImpl.getInstance().getLogger().info("Registered " + BlockRegistries.CUSTOM_SKULLS.get().size() + " custom skulls as custom blocks.");
         }
     }

@@ -26,7 +26,6 @@
 package org.geysermc.geyser.translator.collision;
 
 import lombok.EqualsAndHashCode;
-import org.geysermc.geyser.level.block.type.BlockState;
 import org.geysermc.geyser.level.physics.BoundingBox;
 import org.geysermc.geyser.session.GeyserSession;
 
@@ -36,7 +35,7 @@ import org.geysermc.geyser.session.GeyserSession;
 @EqualsAndHashCode(callSuper = true)
 @CollisionRemapper(regex = "^scaffolding$", usesParams = true, passDefaultBoxes = true)
 public class ScaffoldingCollision extends BlockCollision {
-    public ScaffoldingCollision(BlockState state, BoundingBox[] defaultBoxes) {
+    public ScaffoldingCollision(String params, BoundingBox[] defaultBoxes) {
         super(defaultBoxes);
     }
 

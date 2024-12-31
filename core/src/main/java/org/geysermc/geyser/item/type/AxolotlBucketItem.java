@@ -25,11 +25,12 @@
 
 package org.geysermc.geyser.item.type;
 
+import com.github.steveice10.opennbt.tag.builtin.ByteTag;
+import com.github.steveice10.opennbt.tag.builtin.CompoundTag;
+import com.github.steveice10.opennbt.tag.builtin.StringTag;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.text.MinecraftLocale;
-import org.geysermc.geyser.translator.item.BedrockItemBuilder;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
 
 public class AxolotlBucketItem extends Item {
     public AxolotlBucketItem(String javaIdentifier, Builder builder) {
@@ -37,15 +38,15 @@ public class AxolotlBucketItem extends Item {
     }
 
     @Override
-    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull DataComponents components, @NonNull BedrockItemBuilder builder) {
-        super.translateComponentsToBedrock(session, components, builder);
+    public void translateNbtToBedrock(@NonNull GeyserSession session, @NonNull CompoundTag tag) {
+        super.translateNbtToBedrock(session, tag);
 
         // Bedrock Edition displays the properties of the axolotl. Java does not.
         // To work around this, set the custom name to the Axolotl translation and it's displayed correctly
-        builder.putByte("AppendCustomName", 1);
-        builder.putString("CustomName", MinecraftLocale.getLocaleString("entity.minecraft.axolotl", session.locale()));
+        tag.put(new ByteTag("AppendCustomName", (byte) 1));
+        tag.put(new StringTag("CustomName", MinecraftLocale.getLocaleString("entity.minecraft.axolotl", session.locale())));
         // Boilerplate required so the nametag does not appear as "Bucket of "
-        builder.putString("ColorID", "");
-        builder.putString("BodyID", "");
+        tag.put(new StringTag("ColorID", ""));
+        tag.put(new StringTag("BodyID", ""));
     }
 }

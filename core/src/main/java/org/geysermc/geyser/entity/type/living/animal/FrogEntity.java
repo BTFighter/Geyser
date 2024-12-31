@@ -25,19 +25,17 @@
 
 package org.geysermc.geyser.entity.type.living.animal;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.Pose;
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.type.IntEntityMetadata;
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.type.ObjectEntityMetadata;
 import org.cloudburstmc.math.vector.Vector3f;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.EntityDefinition;
 import org.geysermc.geyser.entity.type.Entity;
+import org.geysermc.geyser.item.Items;
 import org.geysermc.geyser.item.type.Item;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.geyser.session.cache.tags.ItemTag;
-import org.geysermc.geyser.session.cache.tags.Tag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.Pose;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ObjectEntityMetadata;
 
 import java.util.OptionalInt;
 import java.util.UUID;
@@ -78,8 +76,7 @@ public class FrogEntity extends AnimalEntity {
     }
 
     @Override
-    @Nullable
-    protected Tag<Item> getFoodTag() {
-        return ItemTag.FROG_FOOD;
+    public boolean canEat(Item item) {
+        return item == Items.SLIME_BALL;
     }
 }

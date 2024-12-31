@@ -16,8 +16,9 @@ public class GeyserJavaBlockState implements JavaBlockState {
     boolean canBreakWithHand;
     String pickItem;
     String pistonBehavior;
+    boolean hasBlockEntity;
 
-    private GeyserJavaBlockState(Builder builder) {
+    private GeyserJavaBlockState(JavaBlockStateBuilder builder) {
         this.identifier = builder.identifier;
         this.javaId = builder.javaId;
         this.stateGroupId = builder.stateGroupId;
@@ -27,6 +28,7 @@ public class GeyserJavaBlockState implements JavaBlockState {
         this.canBreakWithHand = builder.canBreakWithHand;
         this.pickItem = builder.pickItem;
         this.pistonBehavior = builder.pistonBehavior;
+        this.hasBlockEntity = builder.hasBlockEntity;
     }
 
     @Override
@@ -74,13 +76,12 @@ public class GeyserJavaBlockState implements JavaBlockState {
         return pistonBehavior;
     }
 
-    @SuppressWarnings("removal")
     @Override
     public boolean hasBlockEntity() {
-        return false;
+        return hasBlockEntity;
     }
 
-    public static class Builder implements JavaBlockState.Builder {
+    public static class JavaBlockStateBuilder implements Builder {
         private String identifier;
         private int javaId;
         private int stateGroupId;
@@ -90,6 +91,7 @@ public class GeyserJavaBlockState implements JavaBlockState {
         private boolean canBreakWithHand;
         private String pickItem;
         private String pistonBehavior;
+        private boolean hasBlockEntity;
 
         @Override
         public Builder identifier(@NonNull String identifier) {
@@ -145,13 +147,9 @@ public class GeyserJavaBlockState implements JavaBlockState {
             return this;
         }
 
-        @SuppressWarnings("removal")
         @Override
         public Builder hasBlockEntity(boolean hasBlockEntity) {
-            // keep the current behavior
-            if (this.pistonBehavior == null && hasBlockEntity) {
-                this.pistonBehavior = "BLOCK";
-            }
+            this.hasBlockEntity = hasBlockEntity;
             return this;
         }
 

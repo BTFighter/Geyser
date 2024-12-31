@@ -32,15 +32,13 @@ import org.cloudburstmc.protocol.bedrock.packet.BlockEntityDataPacket;
 import org.cloudburstmc.protocol.bedrock.packet.ContainerClosePacket;
 import org.cloudburstmc.protocol.bedrock.packet.ContainerOpenPacket;
 import org.cloudburstmc.protocol.bedrock.packet.UpdateBlockPacket;
-import org.geysermc.geyser.GeyserImpl;
 import org.geysermc.geyser.inventory.Container;
 import org.geysermc.geyser.inventory.Inventory;
-import org.geysermc.geyser.inventory.LecternContainer;
-import org.geysermc.geyser.level.block.type.Block;
-import org.geysermc.geyser.level.block.type.BlockState;
 import org.geysermc.geyser.registry.BlockRegistries;
+import org.geysermc.geyser.registry.type.BlockMapping;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.inventory.InventoryTranslator;
+import org.geysermc.geyser.util.BlockUtils;
 import org.geysermc.geyser.util.InventoryUtils;
 
 import java.util.Collections;
@@ -55,24 +53,20 @@ public class BlockInventoryHolder extends InventoryHolder {
     /**
      * The default Java block ID to translate as a fake block
      */
-    private final BlockState defaultJavaBlockState;
+    private final int defaultJavaBlockState;
     private final ContainerType containerType;
-    private final Set<Block> validBlocks;
+    private final Set<String> validBlocks;
 
-    public BlockInventoryHolder(Block defaultJavaBlock, ContainerType containerType, Block... validBlocks) {
-        this(defaultJavaBlock.defaultBlockState(), containerType, validBlocks);
-    }
-
-    public BlockInventoryHolder(BlockState defaultJavaBlockState, ContainerType containerType, Block... validBlocks) {
-        this.defaultJavaBlockState = defaultJavaBlockState;
+    public BlockInventoryHolder(String javaBlockIdentifier, ContainerType containerType, String... validBlocks) {
+        this.defaultJavaBlockState = BlockRegistries.JAVA_IDENTIFIER_TO_ID.get().getInt(javaBlockIdentifier);
         this.containerType = containerType;
         if (validBlocks != null) {
-            Set<Block> validBlocksTemp = new HashSet<>(validBlocks.length + 1);
+            Set<String> validBlocksTemp = new HashSet<>(validBlocks.length + 1);
             Collections.addAll(validBlocksTemp, validBlocks);
-            validBlocksTemp.add(defaultJavaBlockState.block());
+            validBlocksTemp.add(BlockUtils.getCleanIdentifier(javaBlockIdentifier));
             this.validBlocks = Set.copyOf(validBlocksTemp);
         } else {
-            this.validBlocks = Collections.singleton(defaultJavaBlockState.block());
+            this.validBlocks = Collections.singleton(BlockUtils.getCleanIdentifier(javaBlockIdentifier));
         }
     }
 
@@ -84,13 +78,14 @@ public class BlockInventoryHolder extends InventoryHolder {
         if (checkInteractionPosition(session)) {
             // Then, check to see if the interacted block is valid for this inventory by ensuring the block state identifier is valid
             // and the bedrock block is vanilla
-            BlockState state = session.getGeyser().getWorldManager().blockAt(session, session.getLastInteractionBlockPosition());
-            if (!BlockRegistries.CUSTOM_BLOCK_STATE_OVERRIDES.get().containsKey(state.javaId())) {
-                if (isValidBlock(state)) {
+            int javaBlockId = session.getGeyser().getWorldManager().getBlockAt(session, session.getLastInteractionBlockPosition());
+            if (!BlockRegistries.CUSTOM_BLOCK_STATE_OVERRIDES.get().containsKey(javaBlockId)) {
+                String[] javaBlockString = BlockRegistries.JAVA_BLOCKS.getOrDefault(javaBlockId, BlockMapping.DEFAULT).getJavaIdentifier().split("\\[");
+                if (isValidBlock(javaBlockString)) {
                     // We can safely use this block
                     inventory.setHolderPosition(session.getLastInteractionBlockPosition());
-                    ((Container) inventory).setUsingRealBlock(true, state.block());
-                    setCustomName(session, session.getLastInteractionBlockPosition(), inventory, state);
+                    ((Container) inventory).setUsingRealBlock(true, javaBlockString[0]);
+                    setCustomName(session, session.getLastInteractionBlockPosition(), inventory, javaBlockId);
 
                     return true;
                 }
@@ -128,11 +123,11 @@ public class BlockInventoryHolder extends InventoryHolder {
     /**
      * @return true if this Java block ID can be used for player inventory.
      */
-    protected boolean isValidBlock(BlockState blockState) {
-        return this.validBlocks.contains(blockState.block());
+    protected boolean isValidBlock(String[] javaBlockString) {
+        return this.validBlocks.contains(javaBlockString[0]);
     }
 
-    protected void setCustomName(GeyserSession session, Vector3i position, Inventory inventory, BlockState javaBlockState) {
+    protected void setCustomName(GeyserSession session, Vector3i position, Inventory inventory, int javaBlockState) {
         NbtMap tag = NbtMap.builder()
                 .putInt("x", position.getX())
                 .putInt("y", position.getY())
@@ -156,28 +151,13 @@ public class BlockInventoryHolder extends InventoryHolder {
 
     @Override
     public void closeInventory(InventoryTranslator translator, GeyserSession session, Inventory inventory) {
-        if (inventory instanceof Container container) {
-            if (container.isUsingRealBlock() && !(container instanceof LecternContainer)) {
-                // No need to reset a block since we didn't change any blocks
-                // But send a container close packet because we aren't destroying the original.
-                ContainerClosePacket packet = new ContainerClosePacket();
-                packet.setId((byte) inventory.getBedrockId());
-                packet.setServerInitiated(true);
-                packet.setType(ContainerType.CONTAINER);
-                session.sendUpstreamPacket(packet);
-                return;
-            }
-        } else {
-            GeyserImpl.getInstance().getLogger().warning("Tried to close a non-container inventory in a block inventory holder! ");
-            if (GeyserImpl.getInstance().getLogger().isDebug()) {
-                GeyserImpl.getInstance().getLogger().debug("Current inventory: " + inventory);
-                GeyserImpl.getInstance().getLogger().debug("Open inventory: " + session.getOpenInventory());
-            }
-            // Try to save ourselves? maybe?
-            // https://github.com/GeyserMC/Geyser/issues/4141
-            // TODO: improve once this issue is pinned down properly
-            session.setOpenInventory(null);
-            session.setInventoryTranslator(InventoryTranslator.PLAYER_INVENTORY_TRANSLATOR);
+        if (((Container) inventory).isUsingRealBlock()) {
+            // No need to reset a block since we didn't change any blocks
+            // But send a container close packet because we aren't destroying the original.
+            ContainerClosePacket packet = new ContainerClosePacket();
+            packet.setId((byte) inventory.getBedrockId());
+            packet.setServerInitiated(true);
+            session.sendUpstreamPacket(packet);
             return;
         }
 

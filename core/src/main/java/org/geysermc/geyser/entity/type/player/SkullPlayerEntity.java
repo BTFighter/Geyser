@@ -25,7 +25,6 @@
 
 package org.geysermc.geyser.entity.type.player;
 
-import lombok.Getter;
 import org.cloudburstmc.math.vector.Vector3f;
 import org.cloudburstmc.math.vector.Vector3i;
 import org.cloudburstmc.protocol.bedrock.data.GameType;
@@ -34,10 +33,8 @@ import org.cloudburstmc.protocol.bedrock.data.command.CommandPermission;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.cloudburstmc.protocol.bedrock.packet.AddPlayerPacket;
-import org.geysermc.geyser.level.block.property.Properties;
-import org.geysermc.geyser.level.block.type.BlockState;
-import org.geysermc.geyser.level.block.type.WallSkullBlock;
-import org.geysermc.geyser.level.physics.Direction;
+import lombok.Getter;
+import org.geysermc.geyser.level.block.BlockStateValues;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.session.cache.SkullCache;
 import org.geysermc.geyser.skin.SkullSkinManager;
@@ -102,6 +99,17 @@ public class SkullPlayerEntity extends PlayerEntity {
         session.sendUpstreamPacket(addPlayerPacket);
     }
 
+    /**
+     * Hide the player entity so that it can be reused for a different skull.
+     */
+    public void free() {
+        setFlag(EntityFlag.INVISIBLE, true);
+        updateBedrockMetadata();
+
+        // Move skull entity out of the way
+        moveAbsolute(session.getPlayerEntity().getPosition().up(128), 0, 0, 0, false, true);
+    }
+
     public void updateSkull(SkullCache.Skull skull) {
         skullPosition = skull.getPosition();
 
@@ -129,19 +137,20 @@ public class SkullPlayerEntity extends PlayerEntity {
         float z = skull.getPosition().getZ() + .5f;
         float rotation;
 
-        BlockState blockState = skull.getBlockState();
-        if (blockState.block() instanceof WallSkullBlock) {
+        int blockState = skull.getBlockState();
+        byte floorRotation = BlockStateValues.getSkullRotation(blockState);
+        if (floorRotation == -1) {
+            // Wall skull
             y += 0.25f;
-            Direction direction = blockState.getValue(Properties.HORIZONTAL_FACING);
-            rotation = WallSkullBlock.getDegrees(direction);
-            switch (direction) {
-                case NORTH -> z += 0.24f;
-                case SOUTH -> z -= 0.24f;
-                case WEST -> x += 0.24f;
-                case EAST -> x -= 0.24f;
+            rotation = BlockStateValues.getSkullWallDirections().get(blockState);
+            switch ((int) rotation) {
+                case 180 -> z += 0.24f; // North
+                case 0 -> z -= 0.24f; // South
+                case 90 -> x += 0.24f; // West
+                case 270 -> x -= 0.24f; // East
             }
         } else {
-            rotation = (180f + blockState.getValue(Properties.ROTATION_16, 0) * 22.5f) % 360;
+            rotation = (180f + (floorRotation * 22.5f)) % 360;
         }
 
         moveAbsolute(Vector3f.from(x, y, z), rotation, 0, rotation, true, true);

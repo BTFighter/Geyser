@@ -25,15 +25,14 @@
 
 package org.geysermc.geyser.inventory;
 
+import com.github.steveice10.mc.protocol.data.game.inventory.ContainerType;
+import com.github.steveice10.mc.protocol.packet.ingame.serverbound.inventory.ServerboundRenameItemPacket;
 import lombok.Getter;
 import lombok.Setter;
-import net.kyori.adventure.text.Component;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.text.MessageTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerType;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentType;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.inventory.ServerboundRenameItemPacket;
+import org.geysermc.geyser.util.ItemUtils;
 
 /**
  * Used to determine if rename packets should be sent and stores
@@ -73,9 +72,9 @@ public class AnvilContainer extends Container {
         String correctRename;
         newName = rename;
 
-        Component originalName = getInput().getComponent(DataComponentType.CUSTOM_NAME);
+        String originalName = ItemUtils.getCustomName(getInput().getNbt());
 
-        String plainOriginalName = MessageTranslator.convertToPlainText(originalName, session.locale());
+        String plainOriginalName = MessageTranslator.convertToPlainTextLenient(originalName, session.locale());
         String plainNewName = MessageTranslator.convertToPlainText(rename);
         if (!plainOriginalName.equals(plainNewName)) {
             // Strip out formatting since Java Edition does not allow it
@@ -85,7 +84,7 @@ public class AnvilContainer extends Container {
             session.sendDownstreamGamePacket(renameItemPacket);
         } else {
             // Restore formatting for item since we're not renaming
-            correctRename = originalName != null ? MessageTranslator.convertMessage(originalName, session.locale()) : "";
+            correctRename = MessageTranslator.convertMessageLenient(originalName);
             // Java Edition sends the original custom name when not renaming,
             // if there isn't a custom name an empty string is sent
             ServerboundRenameItemPacket renameItemPacket = new ServerboundRenameItemPacket(plainOriginalName);

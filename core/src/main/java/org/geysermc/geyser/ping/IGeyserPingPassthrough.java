@@ -26,7 +26,6 @@
 package org.geysermc.geyser.ping;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
-
 import java.net.InetSocketAddress;
 
 /**
@@ -35,10 +34,10 @@ import java.net.InetSocketAddress;
 public interface IGeyserPingPassthrough {
 
     /**
-     * Gets the ping information, including the MOTD and player count, from the server
+     * Get the MOTD of the server displayed on the multiplayer screen
      *
      * @param inetSocketAddress the ip address of the client pinging the server
-     * @return the ping information
+     * @return string of the MOTD
      */
     @Nullable
     GeyserPingInfo getPingInformation(InetSocketAddress inetSocketAddress);

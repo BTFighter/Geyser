@@ -38,6 +38,12 @@ public @interface CollisionRemapper {
     String regex();
 
     /**
+     * Regex of block state parameters to apply this collision to
+     * Defaults to matching any value
+     */
+    String paramRegex() default ".*";
+
+    /**
      * Signals if a new instance needs to created for every block state
      */
     boolean usesParams() default false;

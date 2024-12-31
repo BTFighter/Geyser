@@ -28,7 +28,6 @@ package org.geysermc.geyser.registry.type;
 import it.unimi.dsi.fastutil.Pair;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
-import lombok.ToString;
 import lombok.Value;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.cloudburstmc.protocol.bedrock.data.definitions.BlockDefinition;
@@ -43,13 +42,13 @@ import java.util.List;
 @Value
 @Builder
 @EqualsAndHashCode
-@ToString
 public class ItemMapping {
     public static final ItemMapping AIR = new ItemMapping(
             "minecraft:air",
             ItemDefinition.AIR,
             0,
             null, // Air is never sent in full over the network for this to serialize.
+            null,
             null,
             null,
             Collections.emptyList(),
@@ -67,6 +66,7 @@ public class ItemMapping {
     BlockDefinition bedrockBlockDefinition;
 
     String toolType;
+    String toolTier;
 
     String translationString;
 

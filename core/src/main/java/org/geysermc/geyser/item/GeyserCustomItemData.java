@@ -35,7 +35,6 @@ import org.geysermc.geyser.api.item.custom.CustomRenderOffsets;
 
 import java.util.HashSet;
 import java.util.Objects;
-import java.util.OptionalInt;
 import java.util.Set;
 
 @EqualsAndHashCode
@@ -47,8 +46,6 @@ public class GeyserCustomItemData implements CustomItemData {
     private final String icon;
     private final boolean allowOffhand;
     private final boolean displayHandheld;
-    private final OptionalInt creativeCategory;
-    private final String creativeGroup;
     private final int textureSize;
     private final CustomRenderOffsets renderOffsets;
     private final Set<String> tags;
@@ -59,8 +56,6 @@ public class GeyserCustomItemData implements CustomItemData {
                                 String icon,
                                 boolean allowOffhand,
                                 boolean displayHandheld,
-                                OptionalInt creativeCategory,
-                                String creativeGroup,
                                 int textureSize,
                                 CustomRenderOffsets renderOffsets,
                                 Set<String> tags) {
@@ -70,8 +65,6 @@ public class GeyserCustomItemData implements CustomItemData {
         this.icon = icon;
         this.allowOffhand = allowOffhand;
         this.displayHandheld = displayHandheld;
-        this.creativeCategory = creativeCategory;
-        this.creativeGroup = creativeGroup;
         this.textureSize = textureSize;
         this.renderOffsets = renderOffsets;
         this.tags = tags;
@@ -108,16 +101,6 @@ public class GeyserCustomItemData implements CustomItemData {
     }
 
     @Override
-    public @NonNull OptionalInt creativeCategory() {
-        return this.creativeCategory;
-    }
-
-    @Override
-    public @Nullable String creativeGroup() {
-        return this.creativeGroup;
-    }
-
-    @Override
     public int textureSize() {
         return textureSize;
     }
@@ -132,15 +115,14 @@ public class GeyserCustomItemData implements CustomItemData {
         return tags;
     }
 
-    public static class Builder implements CustomItemData.Builder {
+    public static class CustomItemDataBuilder implements Builder {
         protected String name = null;
         protected CustomItemOptions customItemOptions = null;
+
         protected String displayName = null;
         protected String icon = null;
         protected boolean allowOffhand = true; // Bedrock doesn't give items offhand allowance unless they serve gameplay purpose, but we want to be friendly with Java
         protected boolean displayHandheld = false;
-        protected OptionalInt creativeCategory = OptionalInt.empty();
-        protected String creativeGroup = null;
         protected int textureSize = 16;
         protected CustomRenderOffsets renderOffsets = null;
         protected Set<String> tags = new HashSet<>();
@@ -182,18 +164,6 @@ public class GeyserCustomItemData implements CustomItemData {
         }
 
         @Override
-        public Builder creativeCategory(int creativeCategory) {
-            this.creativeCategory = OptionalInt.of(creativeCategory);
-            return this;
-        }
-
-        @Override
-        public Builder creativeGroup(@Nullable String creativeGroup) {
-            this.creativeGroup = creativeGroup;
-            return this;
-        }
-
-        @Override
         public Builder textureSize(int textureSize) {
             this.textureSize = textureSize;
             return this;
@@ -223,8 +193,7 @@ public class GeyserCustomItemData implements CustomItemData {
             if (this.icon == null) {
                 this.icon = this.name;
             }
-            return new GeyserCustomItemData(this.name, this.customItemOptions, this.displayName, this.icon, this.allowOffhand,
-                    this.displayHandheld, this.creativeCategory, this.creativeGroup, this.textureSize, this.renderOffsets, this.tags);
+            return new GeyserCustomItemData(this.name, this.customItemOptions, this.displayName, this.icon, this.allowOffhand, this.displayHandheld, this.textureSize, this.renderOffsets, this.tags);
         }
     }
 }

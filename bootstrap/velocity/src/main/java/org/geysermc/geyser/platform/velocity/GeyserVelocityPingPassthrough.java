@@ -26,15 +26,12 @@
 package org.geysermc.geyser.platform.velocity;
 
 import com.velocitypowered.api.event.proxy.ProxyPingEvent;
-import com.velocitypowered.api.network.ProtocolState;
 import com.velocitypowered.api.network.ProtocolVersion;
 import com.velocitypowered.api.proxy.InboundConnection;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.server.ServerPing;
-import com.velocitypowered.api.proxy.server.ServerPing.Version;
 import lombok.AllArgsConstructor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import org.geysermc.geyser.network.GameProtocol;
 import org.geysermc.geyser.ping.GeyserPingInfo;
 import org.geysermc.geyser.ping.IGeyserPingPassthrough;
 
@@ -53,9 +50,7 @@ public class GeyserVelocityPingPassthrough implements IGeyserPingPassthrough {
         try {
             event = server.getEventManager().fire(new ProxyPingEvent(new GeyserInboundConnection(inetSocketAddress), ServerPing.builder()
                     .description(server.getConfiguration().getMotd()).onlinePlayers(server.getPlayerCount())
-                    .maximumPlayers(server.getConfiguration().getShowMaxPlayers())
-                    .version(new Version(GameProtocol.getJavaProtocolVersion(), GameProtocol.getJavaMinecraftVersion())) 
-                    .build())).get();
+                    .maximumPlayers(server.getConfiguration().getShowMaxPlayers()).build())).get();
         } catch (ExecutionException | InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -92,11 +87,6 @@ public class GeyserVelocityPingPassthrough implements IGeyserPingPassthrough {
         @Override
         public ProtocolVersion getProtocolVersion() {
             return ProtocolVersion.MAXIMUM_VERSION;
-        }
-
-        @Override
-        public ProtocolState getProtocolState() {
-            return ProtocolState.STATUS;
         }
     }
 

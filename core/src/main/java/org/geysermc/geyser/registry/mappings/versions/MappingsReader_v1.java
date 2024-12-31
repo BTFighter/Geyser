@@ -27,6 +27,7 @@ package org.geysermc.geyser.registry.mappings.versions;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.github.steveice10.mc.protocol.data.game.Identifier;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -41,10 +42,10 @@ import org.geysermc.geyser.api.item.custom.CustomItemData;
 import org.geysermc.geyser.api.item.custom.CustomItemOptions;
 import org.geysermc.geyser.api.util.CreativeCategory;
 import org.geysermc.geyser.item.exception.InvalidCustomMappingsFileException;
-import org.geysermc.geyser.level.block.GeyserCustomBlockComponents;
-import org.geysermc.geyser.level.block.GeyserCustomBlockData;
-import org.geysermc.geyser.level.block.GeyserGeometryComponent;
-import org.geysermc.geyser.level.block.GeyserMaterialInstance;
+import org.geysermc.geyser.level.block.GeyserCustomBlockComponents.CustomBlockComponentsBuilder;
+import org.geysermc.geyser.level.block.GeyserCustomBlockData.CustomBlockDataBuilder;
+import org.geysermc.geyser.level.block.GeyserGeometryComponent.GeometryComponentBuilder;
+import org.geysermc.geyser.level.block.GeyserMaterialInstance.MaterialInstanceBuilder;
 import org.geysermc.geyser.level.physics.BoundingBox;
 import org.geysermc.geyser.registry.BlockRegistries;
 import org.geysermc.geyser.registry.mappings.util.CustomBlockComponentsMapping;
@@ -54,7 +55,6 @@ import org.geysermc.geyser.registry.mappings.util.CustomBlockStateMapping;
 import org.geysermc.geyser.translator.collision.BlockCollision;
 import org.geysermc.geyser.util.BlockUtils;
 import org.geysermc.geyser.util.MathUtils;
-import org.geysermc.geyser.util.MinecraftKey;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -119,7 +119,7 @@ public class MappingsReader_v1 extends MappingsReader {
             blocksNode.fields().forEachRemaining(entry -> {
                 if (entry.getValue().isObject()) {
                     try {
-                        String identifier = MinecraftKey.key(entry.getKey()).asString();
+                        String identifier = Identifier.formalize(entry.getKey());
                         CustomBlockMapping customBlockMapping = this.readBlockMappingEntry(identifier, entry.getValue());
                         consumer.accept(identifier, customBlockMapping);
                     } catch (Exception e) {
@@ -179,14 +179,6 @@ public class MappingsReader_v1 extends MappingsReader {
 
         if (node.has("icon")) {
             customItemData.icon(node.get("icon").asText());
-        }
-
-        if (node.has("creative_category")) {
-            customItemData.creativeCategory(node.get("creative_category").asInt());
-        }
-
-        if (node.has("creative_group")) {
-            customItemData.creativeGroup(node.get("creative_group").asText());
         }
 
         if (node.has("allow_offhand")) {
@@ -256,7 +248,7 @@ public class MappingsReader_v1 extends MappingsReader {
         boolean onlyOverrideStates = node.has("only_override_states") && node.get("only_override_states").asBoolean();
 
         // Create the data for the overall block
-        CustomBlockData.Builder customBlockDataBuilder = new GeyserCustomBlockData.Builder()
+        CustomBlockData.Builder customBlockDataBuilder = new CustomBlockDataBuilder()
                 .name(name)
                 .includedInCreativeInventory(includedInCreativeInventory)
                 .creativeCategory(creativeCategory)
@@ -368,7 +360,7 @@ public class MappingsReader_v1 extends MappingsReader {
         int id = BlockRegistries.JAVA_IDENTIFIER_TO_ID.getOrDefault(stateKey, -1);
         BoxComponent boxComponent = createBoxComponent(id);
         BoxComponent extendedBoxComponent = createExtendedBoxComponent(id);
-        CustomBlockComponents.Builder builder = new GeyserCustomBlockComponents.Builder()
+        CustomBlockComponents.Builder builder = new CustomBlockComponentsBuilder()
                 .collisionBox(boxComponent)
                 .selectionBox(boxComponent);
 
@@ -400,12 +392,12 @@ public class MappingsReader_v1 extends MappingsReader {
 
         if (node.has("geometry")) {
             if (node.get("geometry").isTextual()) {
-                builder.geometry(new GeyserGeometryComponent.Builder()
+                builder.geometry(new GeometryComponentBuilder()
                         .identifier(node.get("geometry").asText())
                         .build());
             } else {
                 JsonNode geometry = node.get("geometry");
-                GeometryComponent.Builder geometryBuilder = new GeyserGeometryComponent.Builder();
+                GeometryComponentBuilder geometryBuilder = new GeometryComponentBuilder();
                 if (geometry.has("identifier")) {
                     geometryBuilder.identifier(geometry.get("identifier").asText());
                 }
@@ -484,9 +476,7 @@ public class MappingsReader_v1 extends MappingsReader {
         }
 
         if (node.has("unit_cube")) {
-            builder.geometry(GeometryComponent.builder()
-                .identifier("minecraft:geometry.full_block")
-                .build());
+            builder.unitCube(node.get("unit_cube").asBoolean());
         }
 
         if (node.has("material_instances")) {
@@ -664,7 +654,7 @@ public class MappingsReader_v1 extends MappingsReader {
             ambientOcclusion = node.get("ambient_occlusion").asBoolean();
         }
 
-        return new GeyserMaterialInstance.Builder()
+        return new MaterialInstanceBuilder()
                 .texture(texture)
                 .renderMethod(renderMethod)
                 .faceDimming(faceDimming)

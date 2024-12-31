@@ -56,7 +56,12 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
 import java.util.stream.Collectors;
 
 @Getter
@@ -73,7 +78,6 @@ public class DumpInfo {
     private final GeyserConfiguration config;
     private final Floodgate floodgate;
     private final Object2IntMap<DeviceOs> userPlatforms;
-    private final int connectionAttempts;
     private final HashInfo hashInfo;
     private final RamInfo ramInfo;
     private LogsInfo logsInfo;
@@ -81,7 +85,7 @@ public class DumpInfo {
     private final FlagsInfo flagsInfo;
     private final List<ExtensionInfo> extensionInfo;
 
-    public DumpInfo(GeyserImpl geyser, boolean addLog) {
+    public DumpInfo(boolean addLog) {
         this.versionInfo = new VersionInfo();
 
         this.cpuCount = Runtime.getRuntime().availableProcessors();
@@ -91,7 +95,7 @@ public class DumpInfo {
 
         this.gitInfo = new GitInfo(GeyserImpl.BUILD_NUMBER, GeyserImpl.COMMIT.substring(0, 7), GeyserImpl.COMMIT, GeyserImpl.BRANCH, GeyserImpl.REPOSITORY);
 
-        this.config = geyser.getConfig();
+        this.config = GeyserImpl.getInstance().getConfig();
         this.floodgate = new Floodgate();
 
         String md5Hash = "unknown";
@@ -107,7 +111,7 @@ public class DumpInfo {
             //noinspection UnstableApiUsage
             sha256Hash = byteSource.hash(Hashing.sha256()).toString();
         } catch (Exception e) {
-            if (this.config.isDebugMode()) {
+            if (GeyserImpl.getInstance().getConfig().isDebugMode()) {
                 e.printStackTrace();
             }
         }
@@ -116,22 +120,16 @@ public class DumpInfo {
         this.ramInfo = new RamInfo();
 
         if (addLog) {
-            this.logsInfo = new LogsInfo(geyser);
+            this.logsInfo = new LogsInfo();
         }
 
         this.userPlatforms = new Object2IntOpenHashMap<>();
-        for (GeyserSession session : geyser.getSessionManager().getAllSessions()) {
+        for (GeyserSession session : GeyserImpl.getInstance().getSessionManager().getAllSessions()) {
             DeviceOs device = session.getClientData().getDeviceOs();
             userPlatforms.put(device, userPlatforms.getOrDefault(device, 0) + 1);
         }
 
-        if (geyser.getGeyserServer() != null) {
-            this.connectionAttempts = geyser.getGeyserServer().getConnectionAttempts();
-        } else {
-            this.connectionAttempts = 0; // Fallback if Geyser failed to fully startup
-        }
-
-        this.bootstrapInfo = geyser.getBootstrap().getDumpInfo();
+        this.bootstrapInfo = GeyserImpl.getInstance().getBootstrap().getDumpInfo();
 
         this.flagsInfo = new FlagsInfo();
 
@@ -248,10 +246,10 @@ public class DumpInfo {
     public static class LogsInfo {
         private String link;
 
-        public LogsInfo(GeyserImpl geyser) {
+        public LogsInfo() {
             try {
                 Map<String, String> fields = new HashMap<>();
-                fields.put("content", FileUtils.readAllLines(geyser.getBootstrap().getLogsPath()).collect(Collectors.joining("\n")));
+                fields.put("content", FileUtils.readAllLines(GeyserImpl.getInstance().getBootstrap().getLogsPath()).collect(Collectors.joining("\n")));
 
                 JsonNode logData = GeyserImpl.JSON_MAPPER.readTree(WebUtils.postForm("https://api.mclo.gs/1/log", fields));
 

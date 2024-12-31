@@ -25,6 +25,9 @@
 
 package org.geysermc.geyser.entity.type.living.monster;
 
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.type.IntEntityMetadata;
+import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.cloudburstmc.math.vector.Vector3f;
 import org.cloudburstmc.protocol.bedrock.data.SoundEvent;
@@ -32,12 +35,8 @@ import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.EntityDefinition;
 import org.geysermc.geyser.inventory.GeyserItemStack;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.geyser.session.cache.tags.ItemTag;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
 
 import java.util.UUID;
 
@@ -66,7 +65,7 @@ public class CreeperEntity extends MonsterEntity {
     @NonNull
     @Override
     protected InteractiveTag testMobInteraction(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
-        if (session.getTagCache().is(ItemTag.CREEPER_IGNITERS, itemInHand)) {
+        if (session.getTagCache().isCreeperIgniter(itemInHand.asItem())) {
             return InteractiveTag.IGNITE_CREEPER;
         } else {
             return super.testMobInteraction(hand, itemInHand);
@@ -76,7 +75,7 @@ public class CreeperEntity extends MonsterEntity {
     @NonNull
     @Override
     protected InteractionResult mobInteract(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
-        if (session.getTagCache().is(ItemTag.CREEPER_IGNITERS, itemInHand)) {
+        if (session.getTagCache().isCreeperIgniter(itemInHand.asItem())) {
             // Ignite creeper - as of 1.19.3
             session.playSoundEvent(SoundEvent.IGNITE, position);
             return InteractionResult.SUCCESS;

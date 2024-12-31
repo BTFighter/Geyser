@@ -45,7 +45,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -55,7 +54,7 @@ import java.util.zip.ZipFile;
 /**
  * Loads {@link ResourcePack}s within a {@link Path} directory, firing the {@link GeyserLoadResourcePacksEvent}.
  */
-public class ResourcePackLoader implements RegistryLoader<Path, Map<UUID, ResourcePack>> {
+public class ResourcePackLoader implements RegistryLoader<Path, Map<String, ResourcePack>> {
 
     static final PathMatcher PACK_MATCHER = FileSystems.getDefault().getPathMatcher("glob:**.{zip,mcpack}");
 
@@ -65,8 +64,8 @@ public class ResourcePackLoader implements RegistryLoader<Path, Map<UUID, Resour
      * Loop through the packs directory and locate valid resource pack files
      */
     @Override
-    public Map<UUID, ResourcePack> load(Path directory) {
-        Map<UUID, ResourcePack> packMap = new HashMap<>();
+    public Map<String, ResourcePack> load(Path directory) {
+        Map<String, ResourcePack> packMap = new HashMap<>();
 
         if (!Files.exists(directory)) {
             try {
@@ -101,7 +100,7 @@ public class ResourcePackLoader implements RegistryLoader<Path, Map<UUID, Resour
         for (Path path : event.resourcePacks()) {
             try {
                 GeyserResourcePack pack = readPack(path);
-                packMap.put(pack.manifest().header().uuid(), pack);
+                packMap.put(pack.manifest().header().uuid().toString(), pack);
             } catch (Exception e) {
                 e.printStackTrace();
             }

@@ -40,11 +40,9 @@ import org.geysermc.geyser.api.network.AuthType;
 import org.geysermc.geyser.network.CIDRMatcher;
 import org.geysermc.geyser.text.AsteriskSerializer;
 import org.geysermc.geyser.text.GeyserLocale;
-import org.geysermc.geyser.util.WebUtils;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -94,7 +92,7 @@ public abstract class GeyserJacksonConfiguration implements GeyserConfiguration 
     private boolean debugMode = false;
 
     @JsonProperty("allow-third-party-capes")
-    private boolean allowThirdPartyCapes = false;
+    private boolean allowThirdPartyCapes = true;
 
     @JsonProperty("show-cooldown")
     private String showCooldown = "title";
@@ -174,15 +172,6 @@ public abstract class GeyserJacksonConfiguration implements GeyserConfiguration 
             return port;
         }
 
-        @Setter
-        @JsonProperty("broadcast-port")
-        private int broadcastPort = 0;
-
-        @Override
-        public int broadcastPort() {
-            return broadcastPort;
-        }
-
         @Getter
         @JsonProperty("clone-remote-port")
         private boolean cloneRemotePort = false;
@@ -235,18 +224,7 @@ public abstract class GeyserJacksonConfiguration implements GeyserConfiguration 
             List<CIDRMatcher> matchers = this.whitelistedIPsMatchers;
             if (matchers == null) {
                 synchronized (this) {
-                    // Check if proxyProtocolWhitelistedIPs contains URLs we need to fetch and parse by line
-                    List<String> whitelistedCIDRs = new ArrayList<>();
-                    for (String ip: proxyProtocolWhitelistedIPs) {
-                        if (!ip.startsWith("http")) {
-                            whitelistedCIDRs.add(ip);
-                            continue; 
-                        }
-
-                        WebUtils.getLineStream(ip).forEach(whitelistedCIDRs::add);
-                    }
-
-                    this.whitelistedIPsMatchers = matchers = whitelistedCIDRs.stream()
+                    this.whitelistedIPsMatchers = matchers = proxyProtocolWhitelistedIPs.stream()
                             .map(CIDRMatcher::new)
                             .collect(Collectors.toList());
                 }

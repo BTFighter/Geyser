@@ -25,7 +25,7 @@
 
 package org.geysermc.geyser.translator.protocol.java;
 
-import org.geysermc.mcprotocollib.protocol.packet.common.clientbound.ClientboundDisconnectPacket;
+import com.github.steveice10.mc.protocol.packet.common.clientbound.ClientboundDisconnectPacket;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
@@ -37,5 +37,10 @@ public class JavaDisconnectTranslator extends PacketTranslator<ClientboundDiscon
     @Override
     public void translate(GeyserSession session, ClientboundDisconnectPacket packet) {
         session.disconnect(MessageTranslator.convertMessage(packet.getReason(), session.locale()));
+    }
+
+    @Override
+    public boolean shouldExecuteInEventLoop() {
+        return false;
     }
 }

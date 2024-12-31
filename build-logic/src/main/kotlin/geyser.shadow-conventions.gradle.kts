@@ -7,6 +7,7 @@ plugins {
 
 tasks {
     named<Jar>("jar") {
+        archiveClassifier.set("unshaded")
         from(project.rootProject.file("LICENSE"))
     }
     val shadowJar = named<ShadowJar>("shadowJar") {

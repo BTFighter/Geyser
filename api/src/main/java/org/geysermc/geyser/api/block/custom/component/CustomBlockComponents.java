@@ -129,11 +129,8 @@ public interface CustomBlockComponents {
      * Gets the unit cube component
      * Equivalent to "minecraft:unit_cube"
      *
-     * @deprecated Use {@link #geometry()} and compare with `minecraft:geometry.full_block` instead.
-     *
      * @return The rotation.
      */
-    @Deprecated
     boolean unitCube();
 
     /**
@@ -184,10 +181,6 @@ public interface CustomBlockComponents {
 
         Builder transformation(TransformationComponent transformation);
 
-        /**
-         * @deprecated Use {@link #geometry(GeometryComponent)} with `minecraft:geometry.full_block` instead.
-         */
-        @Deprecated
         Builder unitCube(boolean unitCube);
 
         Builder placeAir(boolean placeAir);

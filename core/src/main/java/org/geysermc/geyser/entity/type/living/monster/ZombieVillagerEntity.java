@@ -25,6 +25,10 @@
 
 package org.geysermc.geyser.entity.type.living.monster;
 
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.EntityMetadata;
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.VillagerData;
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
+import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.cloudburstmc.math.vector.Vector3f;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
@@ -36,10 +40,6 @@ import org.geysermc.geyser.item.Items;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.VillagerData;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
 
 import java.util.UUID;
 

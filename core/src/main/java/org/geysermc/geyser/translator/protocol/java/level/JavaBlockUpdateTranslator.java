@@ -25,17 +25,17 @@
 
 package org.geysermc.geyser.translator.protocol.java.level;
 
+import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundBlockUpdatePacket;
 import org.cloudburstmc.math.vector.Vector3i;
 import org.cloudburstmc.protocol.bedrock.data.SoundEvent;
 import org.cloudburstmc.protocol.bedrock.packet.LevelSoundEventPacket;
-import org.geysermc.geyser.item.type.Item;
-import org.geysermc.geyser.level.WorldManager;
-import org.geysermc.geyser.level.block.type.BlockState;
+import org.geysermc.geyser.api.util.PlatformType;
+import org.geysermc.geyser.registry.BlockRegistries;
+import org.geysermc.geyser.registry.type.BlockMapping;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.translator.sound.BlockSoundInteractionTranslator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundBlockUpdatePacket;
 
 @Translator(packet = ClientboundBlockUpdatePacket.class)
 public class JavaBlockUpdateTranslator extends PacketTranslator<ClientboundBlockUpdatePacket> {
@@ -43,41 +43,38 @@ public class JavaBlockUpdateTranslator extends PacketTranslator<ClientboundBlock
     @Override
     public void translate(GeyserSession session, ClientboundBlockUpdatePacket packet) {
         Vector3i pos = packet.getEntry().getPosition();
-        WorldManager worldManager = session.getGeyser().getWorldManager();
-        // Platforms where Geyser has direct server access don't allow us to detect actual block changes,
-        // hence why those platforms deal with sounds for block placements differently
-        boolean updatePlacement = !worldManager.hasOwnChunkCache() &&
-                !session.getErosionHandler().isActive() && worldManager.getBlockAt(session, pos) != packet.getEntry().getBlock();
+        boolean updatePlacement = session.getGeyser().getPlatformType() != PlatformType.SPIGOT && // Spigot simply listens for the block place event
+                !session.getErosionHandler().isActive() && session.getGeyser().getWorldManager().getBlockAt(session, pos) != packet.getEntry().getBlock();
         session.getWorldCache().updateServerCorrectBlockState(pos, packet.getEntry().getBlock());
         if (updatePlacement) {
-            this.checkPlaceSound(session, packet);
+            this.checkPlace(session, packet);
         }
         this.checkInteract(session, packet);
     }
 
-    private void checkPlaceSound(GeyserSession session, ClientboundBlockUpdatePacket packet) {
+    private boolean checkPlace(GeyserSession session, ClientboundBlockUpdatePacket packet) {
         Vector3i lastPlacePos = session.getLastBlockPlacePosition();
         if (lastPlacePos == null) {
-            return;
+            return false;
         }
         if ((lastPlacePos.getX() != packet.getEntry().getPosition().getX()
                 || lastPlacePos.getY() != packet.getEntry().getPosition().getY()
                 || lastPlacePos.getZ() != packet.getEntry().getPosition().getZ())) {
-            return;
+            return false;
         }
 
         // We need to check if the identifier is the same, else a packet with the sound of what the
         // player has in their hand is played, despite if the block is being placed or not
         boolean contains = false;
-        Item item = BlockState.of(packet.getEntry().getBlock()).block().asItem();
-        if (item == session.getLastBlockPlaced()) {
+        String identifier = BlockRegistries.JAVA_BLOCKS.get(packet.getEntry().getBlock()).getItemIdentifier();
+        if (identifier.equals(session.getLastBlockPlacedId())) {
             contains = true;
         }
 
         if (!contains) {
             session.setLastBlockPlacePosition(null);
-            session.setLastBlockPlaced(null);
-            return;
+            session.setLastBlockPlacedId(null);
+            return false;
         }
 
         // This is not sent from the server, so we need to send it this way
@@ -89,7 +86,8 @@ public class JavaBlockUpdateTranslator extends PacketTranslator<ClientboundBlock
         placeBlockSoundPacket.setIdentifier(":");
         session.sendUpstreamPacket(placeBlockSoundPacket);
         session.setLastBlockPlacePosition(null);
-        session.setLastBlockPlaced(null);
+        session.setLastBlockPlacedId(null);
+        return true;
     }
 
     private void checkInteract(GeyserSession session, ClientboundBlockUpdatePacket packet) {
@@ -102,8 +100,8 @@ public class JavaBlockUpdateTranslator extends PacketTranslator<ClientboundBlock
                 || lastInteractPos.getZ() != packet.getEntry().getPosition().getZ())) {
             return;
         }
-        BlockState state = BlockState.of(packet.getEntry().getBlock());
+        String identifier = BlockRegistries.JAVA_BLOCKS.getOrDefault(packet.getEntry().getBlock(), BlockMapping.DEFAULT).getJavaIdentifier();
         session.setInteracting(false);
-        BlockSoundInteractionTranslator.handleBlockInteraction(session, lastInteractPos.toFloat(), state);
+        BlockSoundInteractionTranslator.handleBlockInteraction(session, lastInteractPos.toFloat(), identifier);
     }
 }

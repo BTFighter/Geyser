@@ -25,19 +25,19 @@
 
 package org.geysermc.geyser.translator.protocol.java.entity;
 
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.Equipment;
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.ItemStack;
+import com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.ClientboundSetEquipmentPacket;
+import org.cloudburstmc.protocol.bedrock.data.inventory.ItemData;
 import org.geysermc.geyser.entity.type.Entity;
 import org.geysermc.geyser.entity.type.LivingEntity;
 import org.geysermc.geyser.entity.type.player.PlayerEntity;
-import org.geysermc.geyser.inventory.GeyserItemStack;
 import org.geysermc.geyser.item.Items;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.skin.FakeHeadProvider;
+import org.geysermc.geyser.translator.inventory.item.ItemTranslator;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.Equipment;
-import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentType;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundSetEquipmentPacket;
 
 @Translator(packet = ClientboundSetEquipmentPacket.class)
 public class JavaSetEquipmentTranslator extends PacketTranslator<ClientboundSetEquipmentPacket> {
@@ -58,46 +58,40 @@ public class JavaSetEquipmentTranslator extends PacketTranslator<ClientboundSetE
         boolean mainHandUpdated = false;
         boolean offHandUpdated = false;
         for (Equipment equipment : packet.getEquipment()) {
-            ItemStack stack = equipment.getItem();
+            ItemData item = ItemTranslator.translateToBedrock(session, equipment.getItem());
             switch (equipment.getSlot()) {
                 case HELMET -> {
                     ItemStack javaItem = equipment.getItem();
                     if (livingEntity instanceof PlayerEntity
                             && javaItem != null
                             && javaItem.getId() == Items.PLAYER_HEAD.javaId()
-                            && javaItem.getDataComponents() != null) {
-                        FakeHeadProvider.setHead(session, (PlayerEntity) livingEntity, GeyserItemStack.from(javaItem).getComponent(DataComponentType.PROFILE));
+                            && javaItem.getNbt() != null) {
+                        FakeHeadProvider.setHead(session, (PlayerEntity) livingEntity, javaItem.getNbt().get("SkullOwner"));
                     } else {
                         FakeHeadProvider.restoreOriginalSkin(session, livingEntity);
                     }
 
-                    livingEntity.setHelmet(stack);
+                    livingEntity.setHelmet(item);
                     armorUpdated = true;
                 }
                 case CHESTPLATE -> {
-                    livingEntity.setChestplate(stack);
-                    armorUpdated = true;
-                }
-                case BODY -> {
-                    // BODY is sent for llamas with a carpet equipped, as of 1.20.5
-                    // and for wolves
-                    livingEntity.setBody(stack);
+                    livingEntity.setChestplate(item);
                     armorUpdated = true;
                 }
                 case LEGGINGS -> {
-                    livingEntity.setLeggings(stack);
+                    livingEntity.setLeggings(item);
                     armorUpdated = true;
                 }
                 case BOOTS -> {
-                    livingEntity.setBoots(stack);
+                    livingEntity.setBoots(item);
                     armorUpdated = true;
                 }
                 case MAIN_HAND -> {
-                    livingEntity.setHand(stack);
+                    livingEntity.setHand(item);
                     mainHandUpdated = true;
                 }
                 case OFF_HAND -> {
-                    livingEntity.setOffhand(stack);
+                    livingEntity.setOffHand(item);
                     offHandUpdated = true;
                 }
             }

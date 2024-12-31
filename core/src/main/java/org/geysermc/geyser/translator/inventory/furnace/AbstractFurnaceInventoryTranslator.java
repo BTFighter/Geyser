@@ -32,14 +32,12 @@ import org.geysermc.geyser.inventory.BedrockContainerSlot;
 import org.geysermc.geyser.inventory.Inventory;
 import org.geysermc.geyser.inventory.SlotType;
 import org.geysermc.geyser.inventory.updater.ContainerInventoryUpdater;
-import org.geysermc.geyser.level.block.property.Properties;
-import org.geysermc.geyser.level.block.type.Block;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.inventory.AbstractBlockInventoryTranslator;
 
 public abstract class AbstractFurnaceInventoryTranslator extends AbstractBlockInventoryTranslator {
-    AbstractFurnaceInventoryTranslator(Block javaBlock, ContainerType containerType) {
-        super(3, javaBlock.defaultBlockState().withValue(Properties.LIT, false), containerType, ContainerInventoryUpdater.INSTANCE);
+    AbstractFurnaceInventoryTranslator(String javaBlockIdentifier, ContainerType containerType) {
+        super(3, javaBlockIdentifier, containerType, ContainerInventoryUpdater.INSTANCE);
     }
 
     @Override

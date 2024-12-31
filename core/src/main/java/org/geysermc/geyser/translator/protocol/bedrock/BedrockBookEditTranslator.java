@@ -25,12 +25,12 @@
 
 package org.geysermc.geyser.translator.protocol.bedrock;
 
-import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentType;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.Filterable;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.WritableBookContent;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.inventory.ServerboundEditBookPacket;
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.ItemStack;
+import com.github.steveice10.mc.protocol.packet.ingame.serverbound.inventory.ServerboundEditBookPacket;
+import com.github.steveice10.opennbt.tag.builtin.CompoundTag;
+import com.github.steveice10.opennbt.tag.builtin.ListTag;
+import com.github.steveice10.opennbt.tag.builtin.StringTag;
+import com.github.steveice10.opennbt.tag.builtin.Tag;
 import org.cloudburstmc.protocol.bedrock.packet.BookEditPacket;
 import org.geysermc.geyser.inventory.GeyserItemStack;
 import org.geysermc.geyser.item.type.WrittenBookItem;
@@ -39,7 +39,10 @@ import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.translator.text.MessageTranslator;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 
 @Translator(packet = BookEditPacket.class)
 public class BedrockBookEditTranslator extends PacketTranslator<BookEditPacket> {
@@ -53,16 +56,9 @@ public class BedrockBookEditTranslator extends PacketTranslator<BookEditPacket> 
 
         GeyserItemStack itemStack = session.getPlayerInventory().getItemInHand();
         if (itemStack != null) {
-            DataComponents components = itemStack.getOrCreateComponents();
-            ItemStack bookItem = new ItemStack(itemStack.getJavaId(), itemStack.getAmount(), components);
-            List<String> pages = new LinkedList<>();
-
-            WritableBookContent writableBookContent = components.get(DataComponentType.WRITABLE_BOOK_CONTENT);
-            if (writableBookContent != null) {
-                for (Filterable<String> page : writableBookContent.getPages()) {
-                    pages.add(page.getRaw());
-                }
-            }
+            CompoundTag tag = itemStack.getNbt() != null ? itemStack.getNbt() : new CompoundTag("");
+            ItemStack bookItem = new ItemStack(itemStack.getJavaId(), itemStack.getAmount(), tag);
+            List<Tag> pages = tag.contains("pages") ? new LinkedList<>(((ListTag) tag.get("pages")).getValue()) : new LinkedList<>();
 
             int page = packet.getPageNumber();
             if (page < 0 || WrittenBookItem.MAXIMUM_PAGE_COUNT <= page) {
@@ -73,21 +69,21 @@ public class BedrockBookEditTranslator extends PacketTranslator<BookEditPacket> 
                 case ADD_PAGE: {
                     // Add empty pages in between
                     for (int i = pages.size(); i < page; i++) {
-                        pages.add(i, "");
+                        pages.add(i, new StringTag("", ""));
                     }
-                    pages.add(page, MessageTranslator.convertToPlainText(packet.getText()));
+                    pages.add(page, new StringTag("", MessageTranslator.convertToPlainText(packet.getText())));
                     break;
                 }
                 // Called whenever a page is modified
                 case REPLACE_PAGE: {
                     if (page < pages.size()) {
-                        pages.set(page, MessageTranslator.convertToPlainText(packet.getText()));
+                        pages.set(page, new StringTag("", MessageTranslator.convertToPlainText(packet.getText())));
                     } else {
                         // Add empty pages in between
                         for (int i = pages.size(); i < page; i++) {
-                            pages.add(i, "");
+                            pages.add(i, new StringTag("", ""));
                         }
-                        pages.add(page, MessageTranslator.convertToPlainText(packet.getText()));
+                        pages.add(page, new StringTag("", MessageTranslator.convertToPlainText(packet.getText())));
                     }
                     break;
                 }
@@ -105,31 +101,31 @@ public class BedrockBookEditTranslator extends PacketTranslator<BookEditPacket> 
                     break;
                 }
                 case SIGN_BOOK: {
-                    // As of JE 1.20.5, client no longer adds title and author on its own
+                    tag.put(new StringTag("author", MessageTranslator.convertToPlainText(packet.getAuthor())));
+                    tag.put(new StringTag("title", MessageTranslator.convertToPlainText(packet.getTitle())));
                     break;
                 }
                 default:
                     return;
             }
             // Remove empty pages at the end
-            while (!pages.isEmpty()) {
-                String currentPage = pages.get(pages.size() - 1);
-                if (currentPage.isEmpty()) {
+            while (pages.size() > 0) {
+                StringTag currentPage = (StringTag) pages.get(pages.size() - 1);
+                if (currentPage.getValue() == null || currentPage.getValue().isEmpty()) {
                     pages.remove(pages.size() - 1);
                 } else {
                     break;
                 }
             }
-
-            List<Filterable<String>> filterablePages = new ArrayList<>(pages.size());
-            for (String raw : pages) {
-                filterablePages.add(new Filterable<>(raw, null));
-            }
-            components.put(DataComponentType.WRITABLE_BOOK_CONTENT, new WritableBookContent(filterablePages));
-
+            tag.put(new ListTag("pages", pages));
             // Update local copy
             session.getPlayerInventory().setItem(36 + session.getPlayerInventory().getHeldItemSlot(), GeyserItemStack.from(bookItem), session);
             session.getInventoryTranslator().updateInventory(session, session.getPlayerInventory());
+
+            List<String> networkPages = new ArrayList<>();
+            for (Tag pageTag : pages) {
+                networkPages.add(((StringTag) pageTag).getValue());
+            }
 
             String title;
             if (packet.getAction() == BookEditPacket.Action.SIGN_BOOK) {
@@ -143,7 +139,7 @@ public class BedrockBookEditTranslator extends PacketTranslator<BookEditPacket> 
                 title = null;
             }
 
-            session.getBookEditCache().setPacket(new ServerboundEditBookPacket(session.getPlayerInventory().getHeldItemSlot(), pages, title));
+            session.getBookEditCache().setPacket(new ServerboundEditBookPacket(session.getPlayerInventory().getHeldItemSlot(), networkPages, title));
             // There won't be any more book updates after this, so we can try sending the edit packet immediately
             if (packet.getAction() == BookEditPacket.Action.SIGN_BOOK) {
                 session.getBookEditCache().checkForSend();

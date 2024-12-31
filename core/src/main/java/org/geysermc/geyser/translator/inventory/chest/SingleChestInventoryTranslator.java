@@ -29,29 +29,24 @@ import org.cloudburstmc.protocol.bedrock.data.inventory.ContainerType;
 import org.geysermc.geyser.inventory.Inventory;
 import org.geysermc.geyser.inventory.holder.BlockInventoryHolder;
 import org.geysermc.geyser.inventory.holder.InventoryHolder;
-import org.geysermc.geyser.level.block.Blocks;
-import org.geysermc.geyser.level.block.property.ChestType;
-import org.geysermc.geyser.level.block.property.Properties;
-import org.geysermc.geyser.level.block.type.BlockState;
 import org.geysermc.geyser.session.GeyserSession;
 
 public class SingleChestInventoryTranslator extends ChestInventoryTranslator {
     private final InventoryHolder holder;
 
-    // TODO add barrel???
     public SingleChestInventoryTranslator(int size) {
         super(size, 27);
-        this.holder = new BlockInventoryHolder(Blocks.CHEST.defaultBlockState().withValue(Properties.CHEST_TYPE, ChestType.SINGLE), ContainerType.CONTAINER,
-                Blocks.ENDER_CHEST, Blocks.TRAPPED_CHEST) {
+        this.holder = new BlockInventoryHolder("minecraft:chest[facing=north,type=single,waterlogged=false]", ContainerType.CONTAINER,
+                "minecraft:ender_chest", "minecraft:trapped_chest") {
             @Override
-            protected boolean isValidBlock(BlockState blockState) {
-                if (blockState.is(Blocks.ENDER_CHEST)) {
+            protected boolean isValidBlock(String[] javaBlockString) {
+                if (javaBlockString[0].equals("minecraft:ender_chest")) {
                     // Can't have double ender chests
                     return true;
                 }
 
                 // Add provision to ensure this isn't a double chest
-                return super.isValidBlock(blockState) && blockState.getValue(Properties.CHEST_TYPE) == ChestType.SINGLE;
+                return super.isValidBlock(javaBlockString) && (javaBlockString.length > 1 && javaBlockString[1].contains("type=single"));
             }
         };
     }

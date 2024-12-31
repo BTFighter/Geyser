@@ -25,13 +25,11 @@
 
 package org.geysermc.geyser.translator.level.block.entity;
 
-import org.cloudburstmc.nbt.NbtMap;
+import com.github.steveice10.opennbt.tag.builtin.CompoundTag;
 import org.cloudburstmc.nbt.NbtMapBuilder;
-import org.geysermc.geyser.level.block.type.BlockState;
-import org.geysermc.geyser.session.GeyserSession;
 
 public class EmptyBlockEntityTranslator extends BlockEntityTranslator {
     @Override
-    public void translateTag(GeyserSession session, NbtMapBuilder bedrockNbt, NbtMap javaNbt, BlockState blockState) {
+    public void translateTag(NbtMapBuilder builder, CompoundTag tag, int blockState) {
     }
 }

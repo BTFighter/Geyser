@@ -25,7 +25,7 @@
 
 package org.geysermc.geyser.translator.protocol.java.level;
 
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundSetTimePacket;
+import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundSetTimePacket;
 import org.cloudburstmc.protocol.bedrock.packet.SetTimePacket;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
@@ -36,9 +36,9 @@ public class JavaSetTimeTranslator extends PacketTranslator<ClientboundSetTimePa
 
     @Override
     public void translate(GeyserSession session, ClientboundSetTimePacket packet) {
-        session.setWorldTicks(packet.getGameTime());
-
-        long time = packet.getDayTime();
+        // Bedrock sends a GameRulesChangedPacket if there is no daylight cycle
+        // Java just sends a negative long if there is no daylight cycle
+        long time = packet.getTime();
 
         // https://minecraft.wiki/w/Day-night_cycle#24-hour_Minecraft_day
         SetTimePacket setTimePacket = new SetTimePacket();
@@ -47,10 +47,12 @@ public class JavaSetTimeTranslator extends PacketTranslator<ClientboundSetTimePa
         // (Last verified behavior: Bedrock 1.18.12 / Java 1.18.2)
         setTimePacket.setTime((int) (Math.abs(time) % (24000 * 8)));
         session.sendUpstreamPacket(setTimePacket);
-
-        // We need to send a gamerule if this changed
-        if (session.isDaylightCycle() != packet.isTickDayTime()) {
-            session.setDaylightCycle(packet.isTickDayTime());
+        if (!session.isDaylightCycle() && time >= 0) {
+            // Client thinks there is no daylight cycle but there is
+            session.setDaylightCycle(true);
+        } else if (session.isDaylightCycle() && time < 0) {
+            // Client thinks there is daylight cycle but there isn't
+            session.setDaylightCycle(false);
         }
     }
 }
