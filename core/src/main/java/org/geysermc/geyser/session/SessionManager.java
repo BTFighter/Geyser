@@ -28,10 +28,9 @@ package org.geysermc.geyser.session;
 import com.google.common.collect.ImmutableList;
 import lombok.AccessLevel;
 import lombok.Getter;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.geysermc.geyser.text.GeyserLocale;
 
+import javax.annotation.Nonnull;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -70,7 +69,7 @@ public final class SessionManager {
         }
     }
 
-    public @Nullable GeyserSession sessionByXuid(@NonNull String xuid) {
+    public GeyserSession sessionByXuid(@Nonnull String xuid) {
         Objects.requireNonNull(xuid);
         for (GeyserSession session : sessions.values()) {
             if (session.xuid().equals(xuid)) {

@@ -25,14 +25,16 @@
 
 package org.geysermc.geyser.item.exception;
 
-import java.io.Serial;
-
 public class InvalidCustomMappingsFileException extends Exception {
-
-    @Serial
-    private static final long serialVersionUID = 1L;
+    public InvalidCustomMappingsFileException(Throwable cause) {
+        super(cause);
+    }
 
     public InvalidCustomMappingsFileException(String message) {
         super(message);
+    }
+
+    public InvalidCustomMappingsFileException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

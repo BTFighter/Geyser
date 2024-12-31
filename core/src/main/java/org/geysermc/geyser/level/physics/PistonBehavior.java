@@ -25,8 +25,6 @@
 
 package org.geysermc.geyser.level.physics;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
-
 import java.util.Locale;
 
 public enum PistonBehavior {
@@ -37,7 +35,7 @@ public enum PistonBehavior {
 
     private static final PistonBehavior[] VALUES = values();
 
-    public static @NonNull PistonBehavior getByName(String name) {
+    public static PistonBehavior getByName(String name) {
         String upperCase = name.toUpperCase(Locale.ROOT);
         for (PistonBehavior type : VALUES) {
             if (type.name().equals(upperCase)) {

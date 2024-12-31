@@ -35,7 +35,6 @@ import com.fasterxml.jackson.databind.ser.ContextualSerializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
 import java.io.IOException;
-import java.io.Serial;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -43,9 +42,6 @@ import java.lang.annotation.Target;
 import java.util.Optional;
 
 public class AsteriskSerializer extends StdSerializer<Object> implements ContextualSerializer {
-
-    @Serial
-    private static final long serialVersionUID = 1L;
 
     public static final String[] NON_SENSITIVE_ADDRESSES = {"", "0.0.0.0", "localhost", "127.0.0.1", "auto", "unknown"};
 
@@ -68,7 +64,6 @@ public class AsteriskSerializer extends StdSerializer<Object> implements Context
     String asterisk;
     boolean isIp;
 
-    @SuppressWarnings("unused") // Used by Jackson for Geyser dumps
     public AsteriskSerializer() {
         super(Object.class);
     }
@@ -84,7 +79,7 @@ public class AsteriskSerializer extends StdSerializer<Object> implements Context
         Optional<Asterisk> anno = Optional.ofNullable(property)
                 .map(prop -> prop.getAnnotation(Asterisk.class));
 
-        return new AsteriskSerializer(anno.map(Asterisk::value).orElse(null), anno.map(Asterisk::isIp).orElse(false));
+        return new AsteriskSerializer(anno.map(Asterisk::value).orElse(null), anno.map(Asterisk::isIp).orElse(null));
     }
 
     @Override

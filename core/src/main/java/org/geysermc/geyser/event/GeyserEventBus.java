@@ -34,6 +34,7 @@ import org.geysermc.event.subscribe.Subscribe;
 import org.geysermc.geyser.api.event.EventBus;
 import org.geysermc.geyser.api.event.EventRegistrar;
 import org.geysermc.geyser.api.event.EventSubscriber;
+import org.geysermc.geyser.api.extension.Extension;
 
 import java.util.Set;
 import java.util.function.BiConsumer;

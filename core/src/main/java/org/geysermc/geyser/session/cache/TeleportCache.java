@@ -33,7 +33,7 @@ import lombok.RequiredArgsConstructor;
  * Represents a teleport ID and corresponding coordinates that need to be confirmed. <br>
  *
  * The vanilla Java client, after getting a
- * {@link org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.player.ClientboundPlayerPositionPacket},
+ * {@link com.github.steveice10.mc.protocol.packet.ingame.clientbound.entity.player.ClientboundPlayerPositionPacket},
  * adjusts the player's positions and immediately sends a teleport back. However, we want to acknowledge that the
  * Bedrock player actually moves close to that point, so we store the teleport until we get a movement packet from
  * Bedrock that the teleport was successful.
@@ -48,7 +48,7 @@ public class TeleportCache {
     /**
      * How many move packets the teleport can be unconfirmed for before it gets resent to the client
      */
-    private static final int RESEND_THRESHOLD = 20; // Make it one full second with auth input
+    private static final int RESEND_THRESHOLD = 5;
 
     private final double x, y, z;
     private final float pitch, yaw;

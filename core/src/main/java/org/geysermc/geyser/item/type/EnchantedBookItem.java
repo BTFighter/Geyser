@@ -25,24 +25,13 @@
 
 package org.geysermc.geyser.item.type;
 
-import it.unimi.dsi.fastutil.ints.Int2IntMap;
-import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.cloudburstmc.nbt.NbtMap;
-import org.cloudburstmc.nbt.NbtType;
-import org.geysermc.geyser.GeyserImpl;
-import org.geysermc.geyser.inventory.item.BedrockEnchantment;
-import org.geysermc.geyser.item.enchantment.Enchantment;
-import org.geysermc.geyser.registry.type.ItemMapping;
+import com.github.steveice10.opennbt.tag.builtin.CompoundTag;
+import com.github.steveice10.opennbt.tag.builtin.ListTag;
+import com.github.steveice10.opennbt.tag.builtin.Tag;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.geyser.translator.item.BedrockItemBuilder;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentType;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.ItemEnchantments;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class EnchantedBookItem extends Item {
     public EnchantedBookItem(String javaIdentifier, Builder builder) {
@@ -50,52 +39,23 @@ public class EnchantedBookItem extends Item {
     }
 
     @Override
-    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull DataComponents components, @NonNull BedrockItemBuilder builder) {
-        super.translateComponentsToBedrock(session, components, builder);
+    public void translateNbtToBedrock(GeyserSession session, CompoundTag tag) {
+        super.translateNbtToBedrock(session, tag);
 
-        List<NbtMap> bedrockEnchants = new ArrayList<>();
-        ItemEnchantments enchantments = components.get(DataComponentType.STORED_ENCHANTMENTS);
-        if (enchantments != null) { // TODO don't duplicate code?
-            for (Map.Entry<Integer, Integer> enchantment : enchantments.getEnchantments().entrySet()) {
-                NbtMap bedrockTag = remapEnchantment(session, enchantment.getKey(), enchantment.getValue(), builder);
+        List<Tag> newTags = new ArrayList<>();
+        Tag enchantmentTag = tag.remove("StoredEnchantments");
+        if (enchantmentTag instanceof ListTag listTag) {
+            for (Tag subTag : listTag.getValue()) {
+                if (!(subTag instanceof CompoundTag)) continue;
+                CompoundTag bedrockTag = remapEnchantment(session, (CompoundTag) subTag, tag);
                 if (bedrockTag != null) {
-                    bedrockEnchants.add(bedrockTag);
+                    newTags.add(bedrockTag);
                 }
             }
         }
 
-        if (!bedrockEnchants.isEmpty()) {
-            builder.putList("ench", NbtType.COMPOUND, bedrockEnchants);
-        }
-    }
-
-    @Override
-    public void translateNbtToJava(@NonNull GeyserSession session, @NonNull NbtMap bedrockTag, @NonNull DataComponents components, @NonNull ItemMapping mapping) {
-        super.translateNbtToJava(session, bedrockTag, components, mapping);
-
-        List<NbtMap> enchantmentTag = bedrockTag.getList("ench", NbtType.COMPOUND);
-        if (enchantmentTag != null) {
-            Int2IntMap javaEnchantments = new Int2IntOpenHashMap(enchantmentTag.size());
-            for (NbtMap bedrockEnchantment : enchantmentTag) {
-                short bedrockId = bedrockEnchantment.getShort("id");
-
-                BedrockEnchantment enchantment = BedrockEnchantment.getByBedrockId(bedrockId);
-                if (enchantment != null) {
-                    List<Enchantment> enchantments = session.getRegistryCache().enchantments().values();
-                    for (int i = 0; i < enchantments.size(); i++) {
-                        if (enchantments.get(i).bedrockEnchantment() == enchantment) {
-                            int level = bedrockEnchantment.getShort("lvl", (short) 1);
-                            javaEnchantments.put(i, level);
-                            break;
-                        }
-                    }
-                } else {
-                    GeyserImpl.getInstance().getLogger().debug("Unknown bedrock enchantment: " + bedrockId);
-                }
-            }
-            if (!javaEnchantments.isEmpty()) {
-                components.put(DataComponentType.STORED_ENCHANTMENTS, new ItemEnchantments(javaEnchantments, true));
-            }
+        if (!newTags.isEmpty()) {
+            tag.put(new ListTag("ench", newTags));
         }
     }
 }

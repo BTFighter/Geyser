@@ -51,7 +51,6 @@ public final class ConfigSpecificData implements ItemData {
         return configSpecificData;
     }
 
-    @SuppressWarnings("unused")
     public boolean isAffected(Map<String, String> config) {
         for (Map.Entry<String, Pattern> entry : affectedKeys.entrySet()) {
             if (config.containsKey(entry.getKey())) {

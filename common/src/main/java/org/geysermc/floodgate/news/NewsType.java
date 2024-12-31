@@ -26,7 +26,6 @@
 package org.geysermc.floodgate.news;
 
 import com.google.gson.JsonObject;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.geysermc.floodgate.news.data.*;
 
 import java.util.function.Function;
@@ -45,7 +44,7 @@ public enum NewsType {
         this.readFunction = readFunction;
     }
 
-    public static @Nullable NewsType getByName(String newsType) {
+    public static NewsType getByName(String newsType) {
         for (NewsType type : VALUES) {
             if (type.name().equalsIgnoreCase(newsType)) {
                 return type;

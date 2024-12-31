@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.translator.inventory;
 
+import com.github.steveice10.mc.protocol.data.game.inventory.ContainerType;
+import com.github.steveice10.mc.protocol.packet.ingame.serverbound.inventory.ServerboundSelectTradePacket;
 import org.cloudburstmc.math.vector.Vector3f;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityLinkData;
@@ -42,8 +44,6 @@ import org.geysermc.geyser.inventory.updater.InventoryUpdater;
 import org.geysermc.geyser.inventory.updater.UIInventoryUpdater;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.util.InventoryUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerType;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.inventory.ServerboundSelectTradePacket;
 
 import java.util.concurrent.TimeUnit;
 
@@ -77,7 +77,7 @@ public class MerchantInventoryTranslator extends BaseInventoryTranslator {
 
     @Override
     public int bedrockSlotToJava(ItemStackRequestSlotData slotInfoData) {
-        return switch (slotInfoData.getContainerName().getContainer()) {
+        return switch (slotInfoData.getContainer()) {
             case TRADE2_INGREDIENT_1 -> 0;
             case TRADE2_INGREDIENT_2 -> 1;
             case TRADE2_RESULT, CREATED_OUTPUT -> 2;
@@ -112,7 +112,7 @@ public class MerchantInventoryTranslator extends BaseInventoryTranslator {
 
             SetEntityLinkPacket linkPacket = new SetEntityLinkPacket();
             EntityLinkData.Type type = EntityLinkData.Type.PASSENGER;
-            linkPacket.setEntityLink(new EntityLinkData(session.getPlayerEntity().getGeyserId(), geyserId, type, true, false, 0f));
+            linkPacket.setEntityLink(new EntityLinkData(session.getPlayerEntity().getGeyserId(), geyserId, type, true, false));
             session.sendUpstreamPacket(linkPacket);
 
             merchantInventory.setVillager(villager);
@@ -155,7 +155,7 @@ public class MerchantInventoryTranslator extends BaseInventoryTranslator {
 
     private ItemStackResponse handleTrade(GeyserSession session, Inventory inventory, ItemStackRequest request, int tradeChoice) {
         ServerboundSelectTradePacket packet = new ServerboundSelectTradePacket(tradeChoice);
-        session.sendDownstreamGamePacket(packet);
+        session.sendDownstreamPacket(packet);
 
         if (session.isEmulatePost1_13Logic()) {
             // 1.18 Java cooperates nicer than older versions

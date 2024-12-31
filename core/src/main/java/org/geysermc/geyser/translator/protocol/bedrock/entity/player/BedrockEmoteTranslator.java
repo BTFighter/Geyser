@@ -61,8 +61,11 @@ public class BedrockEmoteTranslator extends PacketTranslator<EmotePacket> {
         for (GeyserSession otherSession : session.getGeyser().getSessionManager().getSessions().values()) {
             if (otherSession != session) {
                 if (otherSession.isClosed()) continue;
-
-                otherSession.ensureInEventLoop(() -> playEmote(otherSession, javaId, xuid, emote));
+                if (otherSession.getEventLoop().inEventLoop()) {
+                    playEmote(otherSession, javaId, xuid, emote);
+                } else {
+                    otherSession.executeInEventLoop(() -> playEmote(otherSession, javaId, xuid, emote));
+                }
             }
         }
     }

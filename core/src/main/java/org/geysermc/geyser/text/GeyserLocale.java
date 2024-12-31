@@ -26,7 +26,6 @@
 package org.geysermc.geyser.text;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrays;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.geysermc.geyser.GeyserBootstrap;
 import org.geysermc.geyser.GeyserImpl;
 
@@ -111,7 +110,7 @@ public class GeyserLocale {
         loadGeyserLocale(locale, geyser.getBootstrap());
     }
 
-    private static @Nullable String loadGeyserLocale(String locale, GeyserBootstrap bootstrap) {
+    private static String loadGeyserLocale(String locale, GeyserBootstrap bootstrap) {
         locale = formatLocale(locale);
         // Don't load the locale if it's already loaded.
         if (LOCALE_MAPPINGS.containsKey(locale)) {
@@ -148,9 +147,9 @@ public class GeyserLocale {
                 } catch (IOException ignored) {}
             }
         } else {
-            if (!validLocalLanguage) {
+            if (GeyserImpl.getInstance() != null && !validLocalLanguage) {
                 // Don't warn on missing locales if a local file has been found
-                bootstrap.getGeyserLogger().debug("Missing locale: " + locale);
+                GeyserImpl.getInstance().getLogger().warning("Missing locale: " + locale);
             }
         }
 
@@ -162,7 +161,12 @@ public class GeyserLocale {
                 localeProp.load(stream);
             } catch (IOException e) {
                 String message = "Unable to load custom language override!";
-                bootstrap.getGeyserLogger().error(message, e);
+                if (GeyserImpl.getInstance() != null) {
+                    GeyserImpl.getInstance().getLogger().error(message, e);
+                } else {
+                    System.err.println(message);
+                    e.printStackTrace();
+                }
             }
 
             LOCALE_MAPPINGS.putIfAbsent(locale, localeProp);
@@ -259,13 +263,6 @@ public class GeyserLocale {
             // Invalid locale
             return locale;
         }
-
-        // See https://en.wikipedia.org/wiki/List_of_ISO_639_language_codes - covers the special case that is norwegian
-        String lowerCaseLocale = locale.toLowerCase(Locale.ROOT);
-        if (lowerCaseLocale.equals("nn_no") || lowerCaseLocale.equals("no_no")) {
-            locale = "nb_NO";
-        }
-
         String language = locale.substring(0, 2);
         String country = locale.substring(3);
         return language.toLowerCase(Locale.ENGLISH) + "_" + country.toUpperCase(Locale.ENGLISH);

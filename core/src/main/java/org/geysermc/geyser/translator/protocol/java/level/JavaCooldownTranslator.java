@@ -25,8 +25,7 @@
 
 package org.geysermc.geyser.translator.protocol.java.level;
 
-import net.kyori.adventure.key.Key;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundCooldownPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundCooldownPacket;
 import org.cloudburstmc.protocol.bedrock.packet.PlayerStartItemCooldownPacket;
 import org.geysermc.geyser.item.Items;
 import org.geysermc.geyser.item.type.Item;
@@ -40,11 +39,7 @@ public class JavaCooldownTranslator extends PacketTranslator<ClientboundCooldown
 
     @Override
     public void translate(GeyserSession session, ClientboundCooldownPacket packet) {
-        // If the cooldown group is a modded item, an item that Bedrock doesn't support custom cooldowns for, or a custom cooldown group,
-        // then the cooldown won't be translated correctly. The cooldown won't show up on Bedrock, but they are still unable to use the item.
-        Key cooldownGroup = packet.getCooldownGroup();
-        Item item = Registries.JAVA_ITEM_IDENTIFIERS.get(cooldownGroup.asString());
-
+        Item item = Registries.JAVA_ITEMS.get().get(packet.getItemId());
         // Not every item, as of 1.19, appears to be server-driven. Just these two.
         // Use a map here if it gets too big.
         String cooldownCategory;
@@ -59,10 +54,8 @@ public class JavaCooldownTranslator extends PacketTranslator<ClientboundCooldown
         if (cooldownCategory != null) {
             PlayerStartItemCooldownPacket bedrockPacket = new PlayerStartItemCooldownPacket();
             bedrockPacket.setItemCategory(cooldownCategory);
-            bedrockPacket.setCooldownDuration(Math.round(packet.getCooldownTicks() * (session.getMillisecondsPerTick() / 50)));
+            bedrockPacket.setCooldownDuration(packet.getCooldownTicks());
             session.sendUpstreamPacket(bedrockPacket);
         }
-
-        session.getWorldCache().setCooldown(cooldownGroup, packet.getCooldownTicks());
     }
 }

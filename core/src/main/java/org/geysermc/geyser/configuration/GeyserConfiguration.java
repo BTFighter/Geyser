@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2024 GeyserMC. http://geysermc.org
+ * Copyright (c) 2019-2022 GeyserMC. http://geysermc.org
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,6 +36,7 @@ import org.geysermc.geyser.text.GeyserLocale;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 public interface GeyserConfiguration {
     /**
@@ -52,11 +53,16 @@ public interface GeyserConfiguration {
 
     List<String> getSavedUserLogins();
 
-    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+    @Deprecated
+    Map<String, ? extends IUserAuthenticationInfo> getUserAuths();
+
     boolean isCommandSuggestions();
 
     @JsonIgnore
     boolean isPassthroughMotd();
+
+    @JsonIgnore
+    boolean isPassthroughProtocolName();
 
     @JsonIgnore
     boolean isPassthroughPlayerCounts();
@@ -72,10 +78,8 @@ public interface GeyserConfiguration {
 
     boolean isDebugMode();
 
-    @Deprecated
     boolean isAllowThirdPartyCapes();
 
-    @Deprecated
     boolean isAllowThirdPartyEars();
 
     String getShowCooldown();
@@ -96,7 +100,6 @@ public interface GeyserConfiguration {
 
     boolean isForceResourcePacks();
 
-    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     boolean isXboxAchievementsEnabled();
 
     int getCacheImages();
@@ -124,8 +127,6 @@ public interface GeyserConfiguration {
 
         void setPort(int port);
 
-        void setBroadcastPort(int broadcastPort);
-
         boolean isCloneRemotePort();
 
         int getCompressionLevel();
@@ -146,6 +147,8 @@ public interface GeyserConfiguration {
 
         void setPort(int port);
 
+        boolean isPasswordAuthentication();
+
         boolean isUseProxyProtocol();
 
         boolean isForwardHost();
@@ -159,6 +162,18 @@ public interface GeyserConfiguration {
         }
 
         void setAuthType(AuthType authType);
+    }
+
+    interface IUserAuthenticationInfo {
+        String getEmail();
+
+        String getPassword();
+
+        /**
+         * Will be removed after Microsoft accounts are fully migrated
+         */
+        @Deprecated
+        boolean isMicrosoftAccount();
     }
 
     interface IMetricsInfo {

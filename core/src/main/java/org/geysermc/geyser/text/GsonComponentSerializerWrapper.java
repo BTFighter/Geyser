@@ -30,7 +30,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.function.UnaryOperator;
 
@@ -40,28 +40,28 @@ import java.util.function.UnaryOperator;
 public record GsonComponentSerializerWrapper(GsonComponentSerializer source) implements GsonComponentSerializer {
 
     @Override
-    public @NonNull Gson serializer() {
+    public @NotNull Gson serializer() {
         return this.source.serializer();
     }
 
     @Override
-    public @NonNull UnaryOperator<GsonBuilder> populator() {
+    public @NotNull UnaryOperator<GsonBuilder> populator() {
         return this.source.populator();
     }
 
     @Override
-    public @NonNull Component deserializeFromTree(@NonNull JsonElement input) {
+    public @NotNull Component deserializeFromTree(@NotNull JsonElement input) {
         // This has yet to be an issue, so it won't be overridden unless we have to
         return this.source.deserializeFromTree(input);
     }
 
     @Override
-    public @NonNull JsonElement serializeToTree(@NonNull Component component) {
+    public @NotNull JsonElement serializeToTree(@NotNull Component component) {
         return this.source.serializeToTree(component);
     }
 
     @Override
-    public @NonNull Component deserialize(@NonNull String input) {
+    public @NotNull Component deserialize(@NotNull String input) {
         // See https://github.com/KyoriPowered/adventure/issues/447
         Component component = this.serializer().fromJson(input, Component.class);
         if (component == null) {
@@ -72,12 +72,12 @@ public record GsonComponentSerializerWrapper(GsonComponentSerializer source) imp
     }
 
     @Override
-    public @NonNull String serialize(@NonNull Component component) {
+    public @NotNull String serialize(@NotNull Component component) {
         return this.source.serialize(component);
     }
 
     @Override
-    public @NonNull Builder toBuilder() {
+    public @NotNull Builder toBuilder() {
         return this.source.toBuilder();
     }
 }

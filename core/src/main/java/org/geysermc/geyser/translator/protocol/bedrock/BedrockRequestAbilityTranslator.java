@@ -25,8 +25,8 @@
 
 package org.geysermc.geyser.translator.protocol.bedrock;
 
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.GameMode;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundPlayerAbilitiesPacket;
+import com.github.steveice10.mc.protocol.data.game.entity.player.GameMode;
+import com.github.steveice10.mc.protocol.packet.ingame.serverbound.player.ServerboundPlayerAbilitiesPacket;
 import org.cloudburstmc.protocol.bedrock.data.Ability;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.cloudburstmc.protocol.bedrock.packet.RequestAbilityPacket;
@@ -42,7 +42,6 @@ public class BedrockRequestAbilityTranslator extends PacketTranslator<RequestAbi
 
     @Override
     public void translate(GeyserSession session, RequestAbilityPacket packet) {
-        // TODO: Since 1.20.30, this was replaced by a START_FLYING and STOP_FLYING case in BedrockActionTranslator
         if (packet.getAbility() == Ability.FLYING) {
             boolean isFlying = packet.isBoolValue();
             if (!isFlying && session.getGameMode() == GameMode.SPECTATOR) {
@@ -58,7 +57,7 @@ public class BedrockRequestAbilityTranslator extends PacketTranslator<RequestAbi
 
             session.setFlying(isFlying);
             ServerboundPlayerAbilitiesPacket abilitiesPacket = new ServerboundPlayerAbilitiesPacket(isFlying);
-            session.sendDownstreamGamePacket(abilitiesPacket);
+            session.sendDownstreamPacket(abilitiesPacket);
         }
     }
 }

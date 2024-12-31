@@ -25,8 +25,6 @@
 
 package org.geysermc.floodgate.util;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
-
 public enum WebsocketEventType {
     /**
      * Sent once we successfully connected to the server
@@ -83,7 +81,7 @@ public enum WebsocketEventType {
         this.id = id;
     }
 
-    public static @Nullable WebsocketEventType fromId(int id) {
+    public static WebsocketEventType fromId(int id) {
         return VALUES.length > id ? VALUES[id] : null;
     }
 

@@ -27,9 +27,8 @@ package org.geysermc.geyser.translator.sound.block;
 
 import org.cloudburstmc.math.vector.Vector3f;
 import org.cloudburstmc.protocol.bedrock.data.LevelEvent;
+import org.cloudburstmc.protocol.bedrock.data.LevelEventType;
 import org.cloudburstmc.protocol.bedrock.packet.LevelEventPacket;
-import org.geysermc.geyser.level.block.property.Properties;
-import org.geysermc.geyser.level.block.type.BlockState;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.sound.BlockSoundInteractionTranslator;
 import org.geysermc.geyser.translator.sound.SoundTranslator;
@@ -38,11 +37,12 @@ import org.geysermc.geyser.translator.sound.SoundTranslator;
 public class LeverSoundInteractionTranslator implements BlockSoundInteractionTranslator {
 
     @Override
-    public void translate(GeyserSession session, Vector3f position, BlockState state) {
+    public void translate(GeyserSession session, Vector3f position, String identifier) {
+        boolean powered = identifier.contains("powered=true");
         LevelEventPacket levelEventPacket = new LevelEventPacket();
         levelEventPacket.setPosition(position);
         levelEventPacket.setType(LevelEvent.SOUND_CLICK);
-        levelEventPacket.setData(state.getValue(Properties.POWERED) ? 600 : 500);
+        levelEventPacket.setData(powered ? 600 : 500);
         session.sendUpstreamPacket(levelEventPacket);
     }
 }

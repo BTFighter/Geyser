@@ -30,20 +30,25 @@ import io.netty.channel.local.LocalChannel;
 import io.netty.channel.local.LocalServerChannel;
 
 import java.net.InetSocketAddress;
-import java.util.Objects;
 
 public class LocalChannelWrapper extends LocalChannel {
-
     private final ChannelWrapper wrapper;
-
     /**
      * {@link #newChannelPipeline()} is called during super, so this exists until the wrapper can be initialized.
      */
     private volatile ChannelWrapper tempWrapper;
 
+    public LocalChannelWrapper() {
+        wrapper = new ChannelWrapper(this);
+    }
+
     public LocalChannelWrapper(LocalServerChannel parent, LocalChannel peer) {
         super(parent, peer);
-        this.wrapper = Objects.requireNonNullElseGet(tempWrapper, () -> new ChannelWrapper(this));
+        if (tempWrapper == null) {
+            this.wrapper = new ChannelWrapper(this);
+        } else {
+            this.wrapper = tempWrapper;
+        }
         wrapper.remoteAddress(new InetSocketAddress(0));
     }
 

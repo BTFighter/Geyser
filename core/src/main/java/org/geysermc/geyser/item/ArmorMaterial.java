@@ -31,13 +31,12 @@ import java.util.function.Supplier;
 
 public enum ArmorMaterial {
     LEATHER(() -> Items.LEATHER),
-    CHAINMAIL(() -> Items.IRON_INGOT),
+    CHAIN(() -> Items.IRON_INGOT),
     IRON(() -> Items.IRON_INGOT),
     GOLD(() -> Items.GOLD_INGOT),
     DIAMOND(() -> Items.DIAMOND),
-    TURTLE(() -> Items.TURTLE_SCUTE),
-    NETHERITE(() -> Items.NETHERITE_INGOT),
-    ARMADILLO(() -> Items.ARMADILLO_SCUTE);
+    TURTLE(() -> Items.SCUTE),
+    NETHERITE(() -> Items.NETHERITE_INGOT);
 
     private final Supplier<Item> repairIngredient;
 

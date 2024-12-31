@@ -25,8 +25,6 @@
 
 package org.geysermc.geyser.processor;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
-
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
@@ -161,7 +159,7 @@ public class ClassProcessor extends AbstractProcessor {
         this.processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "Completed processing for " + this.annotationClassName);
     }
 
-    private @Nullable BufferedReader createReader() throws IOException {
+    private BufferedReader createReader() throws IOException {
         if (this.outputPath != null) {
             this.processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "Reading existing " + this.annotationClassName + " list from " + this.outputPath);
             return Files.newBufferedReader(this.outputPath);

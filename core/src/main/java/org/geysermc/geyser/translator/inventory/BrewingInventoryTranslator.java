@@ -32,16 +32,11 @@ import org.cloudburstmc.protocol.bedrock.packet.ContainerSetDataPacket;
 import org.geysermc.geyser.inventory.BedrockContainerSlot;
 import org.geysermc.geyser.inventory.Inventory;
 import org.geysermc.geyser.inventory.updater.ContainerInventoryUpdater;
-import org.geysermc.geyser.level.block.Blocks;
-import org.geysermc.geyser.level.block.property.Properties;
 import org.geysermc.geyser.session.GeyserSession;
 
 public class BrewingInventoryTranslator extends AbstractBlockInventoryTranslator {
     public BrewingInventoryTranslator() {
-        super(5, Blocks.BREWING_STAND.defaultBlockState()
-                .withValue(Properties.HAS_BOTTLE_0, false)
-                .withValue(Properties.HAS_BOTTLE_1, false)
-                .withValue(Properties.HAS_BOTTLE_2, false), ContainerType.BREWING_STAND, ContainerInventoryUpdater.INSTANCE);
+        super(5, "minecraft:brewing_stand[has_bottle_0=false,has_bottle_1=false,has_bottle_2=false]", ContainerType.BREWING_STAND, ContainerInventoryUpdater.INSTANCE);
     }
 
     @Override
@@ -74,11 +69,11 @@ public class BrewingInventoryTranslator extends AbstractBlockInventoryTranslator
 
     @Override
     public int bedrockSlotToJava(ItemStackRequestSlotData slotInfoData) {
-        if (slotInfoData.getContainerName().getContainer() == ContainerSlotType.BREWING_INPUT) {
+        if (slotInfoData.getContainer() == ContainerSlotType.BREWING_INPUT) {
             // Ingredient
             return 3;
         }
-        if (slotInfoData.getContainerName().getContainer() == ContainerSlotType.BREWING_RESULT) {
+        if (slotInfoData.getContainer() == ContainerSlotType.BREWING_RESULT) {
             // Potions
             return slotInfoData.getSlot() - 1;
         }

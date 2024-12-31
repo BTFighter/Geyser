@@ -25,11 +25,13 @@
 
 package org.geysermc.geyser.translator.protocol.java;
 
+import com.github.steveice10.mc.protocol.packet.ingame.clientbound.ClientboundCustomPayloadPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.serverbound.ServerboundCustomPayloadPacket;
 import com.google.common.base.Charsets;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import org.cloudburstmc.protocol.bedrock.packet.TransferPacket;
 import org.cloudburstmc.protocol.bedrock.packet.UnknownPacket;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.geysermc.cumulus.Forms;
 import org.geysermc.cumulus.form.Form;
 import org.geysermc.cumulus.form.util.FormType;
@@ -43,8 +45,6 @@ import org.geysermc.geyser.GeyserLogger;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.common.clientbound.ClientboundCustomPayloadPacket;
-import org.geysermc.mcprotocollib.protocol.packet.common.serverbound.ServerboundCustomPayloadPacket;
 
 import java.nio.charset.StandardCharsets;
 
@@ -54,7 +54,7 @@ public class JavaCustomPayloadTranslator extends PacketTranslator<ClientboundCus
 
     @Override
     public void translate(GeyserSession session, ClientboundCustomPayloadPacket packet) {
-        String channel = packet.getChannel().asString();
+        String channel = packet.getChannel();
 
         if (channel.equals(Constants.PLUGIN_MESSAGE)) {
             ByteBuf buf = Unpooled.wrappedBuffer(packet.getData());
@@ -92,7 +92,7 @@ public class JavaCustomPayloadTranslator extends PacketTranslator<ClientboundCus
                         System.arraycopy(raw, 0, finalData, 2, raw.length);
                     }
 
-                    session.sendDownstreamPacket(new ServerboundCustomPayloadPacket(packet.getChannel(), finalData));
+                    session.sendDownstreamPacket(new ServerboundCustomPayloadPacket(channel, finalData));
                 });
                 session.sendForm(form);
             });
@@ -139,5 +139,11 @@ public class JavaCustomPayloadTranslator extends PacketTranslator<ClientboundCus
                 session.sendUpstreamPacket(toSend);
             });
         }
+    }
+
+    @Override
+    public boolean shouldExecuteInEventLoop() {
+        // For Erosion packets
+        return false;
     }
 }

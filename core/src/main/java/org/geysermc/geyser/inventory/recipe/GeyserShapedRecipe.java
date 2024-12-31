@@ -25,15 +25,14 @@
 
 package org.geysermc.geyser.inventory.recipe;
 
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.ShapedCraftingRecipeDisplay;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.slot.SlotDisplay;
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.ItemStack;
+import com.github.steveice10.mc.protocol.data.game.recipe.Ingredient;
+import com.github.steveice10.mc.protocol.data.game.recipe.data.ShapedRecipeData;
 
-import java.util.List;
+public record GeyserShapedRecipe(int width, int height, Ingredient[] ingredients, ItemStack result) implements GeyserRecipe {
 
-public record GeyserShapedRecipe(int width, int height, List<SlotDisplay> ingredients, SlotDisplay result) implements GeyserRecipe {
-
-    public GeyserShapedRecipe(ShapedCraftingRecipeDisplay data) {
-        this(data.width(), data.height(), data.ingredients(), data.result());
+    public GeyserShapedRecipe(ShapedRecipeData data) {
+        this(data.getWidth(), data.getHeight(), data.getIngredients(), data.getResult());
     }
 
     @Override

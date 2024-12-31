@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2024 GeyserMC. http://geysermc.org
+ * Copyright (c) 2019-2022 GeyserMC. http://geysermc.org
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -39,19 +39,15 @@ public enum DeviceOs {
     OSX("macOS"),
     AMAZON("Amazon"),
     GEARVR("Gear VR"),
-    @Deprecated HOLOLENS("Hololens"),
+    HOLOLENS("Hololens"),
     UWP("Windows"),
     WIN32("Windows x86"),
     DEDICATED("Dedicated"),
-    @Deprecated TVOS("Apple TV"),
-    /**
-     * This is for all PlayStation platforms not just PS4
-     */
-    PS4("PlayStation"),
+    TVOS("Apple TV"),
+    PS4("PS4"),
     NX("Switch"),
-    XBOX("Xbox"),
-    @Deprecated WINDOWS_PHONE("Windows Phone"),
-    LINUX("Linux");
+    XBOX("Xbox One"),
+    WINDOWS_PHONE("Windows Phone");
 
     private static final DeviceOs[] VALUES = values();
 

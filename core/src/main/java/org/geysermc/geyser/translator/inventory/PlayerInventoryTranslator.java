@@ -25,6 +25,10 @@
 
 package org.geysermc.geyser.translator.inventory;
 
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.ItemStack;
+import com.github.steveice10.mc.protocol.data.game.entity.player.GameMode;
+import com.github.steveice10.mc.protocol.data.game.inventory.ContainerType;
+import com.github.steveice10.mc.protocol.packet.ingame.serverbound.inventory.ServerboundSetCreativeModeSlotPacket;
 import it.unimi.dsi.fastutil.ints.IntIterator;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
@@ -40,26 +44,15 @@ import org.cloudburstmc.protocol.bedrock.data.inventory.itemstack.request.action
 import org.cloudburstmc.protocol.bedrock.data.inventory.itemstack.request.action.SwapAction;
 import org.cloudburstmc.protocol.bedrock.data.inventory.itemstack.request.action.TransferItemStackRequestAction;
 import org.cloudburstmc.protocol.bedrock.data.inventory.itemstack.response.ItemStackResponse;
-import org.cloudburstmc.protocol.bedrock.packet.ContainerClosePacket;
-import org.cloudburstmc.protocol.bedrock.packet.ContainerOpenPacket;
 import org.cloudburstmc.protocol.bedrock.packet.InventoryContentPacket;
 import org.cloudburstmc.protocol.bedrock.packet.InventorySlotPacket;
-import org.geysermc.geyser.inventory.BedrockContainerSlot;
-import org.geysermc.geyser.inventory.GeyserItemStack;
-import org.geysermc.geyser.inventory.Inventory;
-import org.geysermc.geyser.inventory.PlayerInventory;
-import org.geysermc.geyser.inventory.SlotType;
+import org.geysermc.geyser.inventory.*;
 import org.geysermc.geyser.item.Items;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.skin.FakeHeadProvider;
 import org.geysermc.geyser.text.GeyserLocale;
-import org.geysermc.geyser.translator.item.ItemTranslator;
+import org.geysermc.geyser.translator.inventory.item.ItemTranslator;
 import org.geysermc.geyser.util.InventoryUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.GameMode;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerType;
-import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentType;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.inventory.ServerboundSetCreativeModeSlotPacket;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -104,8 +97,8 @@ public class PlayerInventoryTranslator extends InventoryTranslator {
             contents[i - 5] = item.getItemData(session);
             if (i == 5 &&
                     item.asItem() == Items.PLAYER_HEAD &&
-                    item.hasNonBaseComponents()) {
-                FakeHeadProvider.setHead(session, session.getPlayerEntity(), item.getComponent(DataComponentType.PROFILE));
+                    item.getNbt() != null) {
+                FakeHeadProvider.setHead(session, session.getPlayerEntity(), item.getNbt().get("SkullOwner"));
             }
         }
         armorContentPacket.setContents(Arrays.asList(contents));
@@ -133,7 +126,7 @@ public class PlayerInventoryTranslator extends InventoryTranslator {
             if (session.getGameMode() == GameMode.CREATIVE) {
                 slotPacket.setItem(UNUSUABLE_CRAFTING_SPACE_BLOCK.apply(session.getUpstream().getProtocolVersion()));
             } else {
-                slotPacket.setItem(inventory.getItem(i).getItemData(session));
+                slotPacket.setItem(ItemTranslator.translateToBedrock(session, inventory.getItem(i).getItemStack()));
             }
 
             session.sendUpstreamPacket(slotPacket);
@@ -148,8 +141,8 @@ public class PlayerInventoryTranslator extends InventoryTranslator {
         if (slot == 5) {
             // Check for custom skull
             if (javaItem.asItem() == Items.PLAYER_HEAD
-                    && javaItem.hasNonBaseComponents()) {
-                FakeHeadProvider.setHead(session, session.getPlayerEntity(), javaItem.getComponent(DataComponentType.PROFILE));
+                    && javaItem.getNbt() != null) {
+                FakeHeadProvider.setHead(session, session.getPlayerEntity(), javaItem.getNbt().get("SkullOwner"));
             } else {
                 FakeHeadProvider.restoreOriginalSkin(session, session.getPlayerEntity());
             }
@@ -184,7 +177,7 @@ public class PlayerInventoryTranslator extends InventoryTranslator {
     @Override
     public int bedrockSlotToJava(ItemStackRequestSlotData slotInfoData) {
         int slotnum = slotInfoData.getSlot();
-        switch (slotInfoData.getContainerName().getContainer()) {
+        switch (slotInfoData.getContainer()) {
             case HOTBAR_AND_INVENTORY:
             case HOTBAR:
             case INVENTORY:
@@ -271,8 +264,6 @@ public class PlayerInventoryTranslator extends InventoryTranslator {
                         GeyserItemStack sourceItem = inventory.getItem(sourceSlot);
                         if (playerInv.getCursor().isEmpty()) {
                             playerInv.setCursor(sourceItem.copy(0), session);
-                        } else if (!InventoryUtils.canStack(sourceItem, playerInv.getCursor())) {
-                            return rejectRequest(request);
                         }
 
                         playerInv.getCursor().add(transferAmount);
@@ -284,8 +275,6 @@ public class PlayerInventoryTranslator extends InventoryTranslator {
                         GeyserItemStack sourceItem = playerInv.getCursor();
                         if (inventory.getItem(destSlot).isEmpty()) {
                             inventory.setItem(destSlot, sourceItem.copy(0), session);
-                        } else if (!InventoryUtils.canStack(sourceItem, inventory.getItem(destSlot))) {
-                            return rejectRequest(request);
                         }
 
                         inventory.getItem(destSlot).add(transferAmount);
@@ -298,8 +287,6 @@ public class PlayerInventoryTranslator extends InventoryTranslator {
                         GeyserItemStack sourceItem = inventory.getItem(sourceSlot);
                         if (inventory.getItem(destSlot).isEmpty()) {
                             inventory.setItem(destSlot, sourceItem.copy(0), session);
-                        } else if (!InventoryUtils.canStack(sourceItem, inventory.getItem(destSlot))) {
-                            return rejectRequest(request);
                         }
 
                         inventory.getItem(destSlot).add(transferAmount);
@@ -371,8 +358,8 @@ public class PlayerInventoryTranslator extends InventoryTranslator {
                         return rejectRequest(request);
                     }
 
-                    ServerboundSetCreativeModeSlotPacket creativeDropPacket = new ServerboundSetCreativeModeSlotPacket((short)-1, sourceItem.getItemStack(dropAction.getCount()));
-                    session.sendDownstreamGamePacket(creativeDropPacket);
+                    ServerboundSetCreativeModeSlotPacket creativeDropPacket = new ServerboundSetCreativeModeSlotPacket(-1, sourceItem.getItemStack(dropAction.getCount()));
+                    session.sendDownstreamPacket(creativeDropPacket);
 
                     sourceItem.sub(dropAction.getCount());
                 }
@@ -433,7 +420,7 @@ public class PlayerInventoryTranslator extends InventoryTranslator {
                     }
                     // Reference the creative items list we send to the client to know what it's asking of us
                     ItemData creativeItem = creativeItems[creativeId];
-                    javaCreativeItem = ItemTranslator.translateToJava(session, creativeItem);
+                    javaCreativeItem = ItemTranslator.translateToJava(creativeItem, session.getItemMappings());
                     break;
                 }
                 case CRAFT_RESULTS_DEPRECATED: {
@@ -462,7 +449,7 @@ public class PlayerInventoryTranslator extends InventoryTranslator {
                     }
                     craftState = CraftState.TRANSFER;
 
-                    if (transferAction.getSource().getContainerName().getContainer() != ContainerSlotType.CREATED_OUTPUT) {
+                    if (transferAction.getSource().getContainer() != ContainerSlotType.CREATED_OUTPUT) {
                         return rejectRequest(request);
                     }
 
@@ -495,7 +482,7 @@ public class PlayerInventoryTranslator extends InventoryTranslator {
                     }
 
                     DropAction dropAction = (DropAction) action;
-                    if (dropAction.getSource().getContainerName().getContainer() != ContainerSlotType.CREATED_OUTPUT || dropAction.getSource().getSlot() != 50) {
+                    if (dropAction.getSource().getContainer() != ContainerSlotType.CREATED_OUTPUT || dropAction.getSource().getSlot() != 50) {
                         return rejectRequest(request);
                     }
 
@@ -504,10 +491,10 @@ public class PlayerInventoryTranslator extends InventoryTranslator {
                         dropStack = javaCreativeItem;
                     } else {
                         // Specify custom count
-                        dropStack = new ItemStack(javaCreativeItem.getId(), dropAction.getCount(), javaCreativeItem.getDataComponents());
+                        dropStack = new ItemStack(javaCreativeItem.getId(), dropAction.getCount(), javaCreativeItem.getNbt());
                     }
-                    ServerboundSetCreativeModeSlotPacket creativeDropPacket = new ServerboundSetCreativeModeSlotPacket((short)-1, dropStack);
-                    session.sendDownstreamGamePacket(creativeDropPacket);
+                    ServerboundSetCreativeModeSlotPacket creativeDropPacket = new ServerboundSetCreativeModeSlotPacket(-1, dropStack);
+                    session.sendDownstreamPacket(creativeDropPacket);
                     break;
                 }
                 default:
@@ -527,12 +514,12 @@ public class PlayerInventoryTranslator extends InventoryTranslator {
         GeyserItemStack item = inventory.getItem(slot);
         ItemStack itemStack = item.isEmpty() ? new ItemStack(-1, 0, null) : item.getItemStack();
 
-        ServerboundSetCreativeModeSlotPacket creativePacket = new ServerboundSetCreativeModeSlotPacket((short)slot, itemStack);
-        session.sendDownstreamGamePacket(creativePacket);
+        ServerboundSetCreativeModeSlotPacket creativePacket = new ServerboundSetCreativeModeSlotPacket(slot, itemStack);
+        session.sendDownstreamPacket(creativePacket);
     }
 
     private static boolean isCraftingGrid(ItemStackRequestSlotData slotInfoData) {
-        return slotInfoData.getContainerName().getContainer() == ContainerSlotType.CRAFTING_INPUT;
+        return slotInfoData.getContainer() == ContainerSlotType.CRAFTING_INPUT;
     }
 
     @Override
@@ -547,21 +534,10 @@ public class PlayerInventoryTranslator extends InventoryTranslator {
 
     @Override
     public void openInventory(GeyserSession session, Inventory inventory) {
-        ContainerOpenPacket containerOpenPacket = new ContainerOpenPacket();
-        containerOpenPacket.setId((byte) 0);
-        containerOpenPacket.setType(org.cloudburstmc.protocol.bedrock.data.inventory.ContainerType.INVENTORY);
-        containerOpenPacket.setUniqueEntityId(-1);
-        containerOpenPacket.setBlockPosition(session.getPlayerEntity().getPosition().toInt());
-        session.sendUpstreamPacket(containerOpenPacket);
     }
 
     @Override
     public void closeInventory(GeyserSession session, Inventory inventory) {
-        ContainerClosePacket packet = new ContainerClosePacket();
-        packet.setServerInitiated(true);
-        packet.setId((byte) ContainerId.INVENTORY);
-        packet.setType(org.cloudburstmc.protocol.bedrock.data.inventory.ContainerType.INVENTORY);
-        session.sendUpstreamPacket(packet);
     }
 
     @Override

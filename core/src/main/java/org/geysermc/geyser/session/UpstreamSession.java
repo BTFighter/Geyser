@@ -58,7 +58,7 @@ public class UpstreamSession {
     }
 
     public void disconnect(String reason) {
-        this.session.disconnect(reason);
+        session.disconnect(reason);
     }
 
     /**

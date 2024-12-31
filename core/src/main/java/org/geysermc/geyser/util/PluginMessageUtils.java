@@ -25,11 +25,10 @@
 
 package org.geysermc.geyser.util;
 
+import com.github.steveice10.mc.protocol.packet.ingame.serverbound.ServerboundCustomPayloadPacket;
 import com.google.common.base.Charsets;
-import net.kyori.adventure.key.Key;
 import org.geysermc.geyser.GeyserImpl;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.packet.common.serverbound.ServerboundCustomPayloadPacket;
 
 import java.nio.ByteBuffer;
 
@@ -55,7 +54,7 @@ public class PluginMessageUtils {
     }
 
     public static void sendMessage(GeyserSession session, String channel, byte[] data) {
-        session.sendDownstreamPacket(new ServerboundCustomPayloadPacket(Key.key(channel), data));
+        session.sendDownstreamPacket(new ServerboundCustomPayloadPacket(channel, data));
     }
 
     private static byte[] writeVarInt(int value) {

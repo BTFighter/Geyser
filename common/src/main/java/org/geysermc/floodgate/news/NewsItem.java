@@ -109,7 +109,6 @@ public final class NewsItem {
         return (T) data;
     }
 
-    @SuppressWarnings("unused")
     public String getRawMessage() {
         return message;
     }

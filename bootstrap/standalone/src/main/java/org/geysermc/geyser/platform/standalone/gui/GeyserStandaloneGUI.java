@@ -25,10 +25,9 @@
 
 package org.geysermc.geyser.platform.standalone.gui;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.geysermc.geyser.GeyserImpl;
 import org.geysermc.geyser.GeyserLogger;
-import org.geysermc.geyser.command.CommandRegistry;
+import org.geysermc.geyser.command.GeyserCommandManager;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.text.GeyserLocale;
 
@@ -65,6 +64,7 @@ public class GeyserStandaloneGUI {
     private final List<Integer> ramValues = new ArrayList<>();
 
     private final DefaultTableModel playerTableModel = new DefaultTableModel();
+    private final JTable playerTable = new JTable(playerTableModel);
 
     /**
      * Create and show the Geyser-Standalone GUI
@@ -100,7 +100,7 @@ public class GeyserStandaloneGUI {
         Container cp = frame.getContentPane();
 
         // Fetch and set the icon for the frame
-        URL image = getClass().getClassLoader().getResource("assets/geyser/icon.png");
+        URL image = getClass().getClassLoader().getResource("icon.png");
         if (image != null) {
             ImageIcon icon = new ImageIcon(image);
             frame.setIconImage(icon.getImage());
@@ -158,7 +158,6 @@ public class GeyserStandaloneGUI {
         playerTableModel.addColumn(GeyserLocale.getLocaleStringLog("geyser.gui.table.ip"));
         playerTableModel.addColumn(GeyserLocale.getLocaleStringLog("geyser.gui.table.username"));
 
-        JTable playerTable = new JTable(playerTableModel);
         JScrollPane playerScrollPane = new JScrollPane(playerTable);
         rightContentPane.add(playerScrollPane);
 
@@ -254,12 +253,12 @@ public class GeyserStandaloneGUI {
             }
 
             @Override
-            public void write(byte @NonNull [] b, int off, int len) {
+            public void write(byte[] b, int off, int len) {
                 appendConsole(new String(b, off, len));
             }
 
             @Override
-            public void write(byte @NonNull[] b) {
+            public void write(byte[] b) {
                 write(b, 0, b.length);
             }
         };
@@ -271,14 +270,15 @@ public class GeyserStandaloneGUI {
     }
 
     /**
-     * Enables the command input box.
+     * Enable the command input box.
      *
-     * @param executor the executor that commands will be run on
-     * @param registry the command registry containing all current commands
+     * @param executor the executor for running commands off the GUI thread
+     * @param commandManager the command manager to delegate commands to
      */
-    public void enableCommands(ScheduledExecutorService executor, CommandRegistry registry) {
+    public void enableCommands(ScheduledExecutorService executor, GeyserCommandManager commandManager) {
         // we don't want to block the GUI thread with the command execution
-        commandListener.dispatcher = cmd -> executor.execute(() -> registry.runCommand(logger, cmd));
+        // todo: once cloud is used, an AsynchronousCommandExecutionCoordinator can be used to avoid this scheduler
+        commandListener.handler = cmd -> executor.schedule(() -> commandManager.runCommand(logger, cmd), 0, TimeUnit.SECONDS);
         commandInput.setEnabled(true);
         commandInput.requestFocusInWindow();
     }
@@ -343,14 +343,13 @@ public class GeyserStandaloneGUI {
 
     private class CommandListener implements ActionListener {
 
-        private Consumer<String> dispatcher;
+        private Consumer<String> handler;
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            // the headless variant of Standalone strips trailing whitespace for us - we need to manually
-            String command = commandInput.getText().stripTrailing();
+            String command = commandInput.getText();
             appendConsole(command + "\n"); // show what was run in the console
-            dispatcher.accept(command); // run the command
+            handler.accept(command); // run the command
             commandInput.setText(""); // clear the input
         }
     }

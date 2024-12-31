@@ -25,29 +25,27 @@
 
 package org.geysermc.geyser.entity.type.living.animal.tameable;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.type.IntEntityMetadata;
+import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
 import org.cloudburstmc.math.vector.Vector3f;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.EntityDefinition;
 import org.geysermc.geyser.inventory.GeyserItemStack;
+import org.geysermc.geyser.item.Items;
 import org.geysermc.geyser.item.type.Item;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.geyser.session.cache.tags.ItemTag;
-import org.geysermc.geyser.session.cache.tags.Tag;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
 
+import javax.annotation.Nonnull;
 import java.util.UUID;
 
 public class CatEntity extends TameableEntity {
 
-    private byte collarColor = 14; // Red - default
+    private byte collarColor;
 
     public CatEntity(GeyserSession session, int entityId, long geyserId, UUID uuid, EntityDefinition<?> definition, Vector3f position, Vector3f motion, float yaw, float pitch, float headYaw) {
         super(session, entityId, geyserId, uuid, definition, position, motion, yaw, pitch, headYaw);
@@ -78,7 +76,10 @@ public class CatEntity extends TameableEntity {
     @Override
     public void setTameableFlags(ByteEntityMetadata entityMetadata) {
         super.setTameableFlags(entityMetadata);
-        updateCollarColor();
+        // Update collar color if tamed
+        if (getFlag(EntityFlag.TAMED)) {
+            dirtyMetadata.put(EntityDataTypes.COLOR, collarColor);
+        }
     }
 
     public void setCatVariant(IntEntityMetadata entityMetadata) {
@@ -100,10 +101,6 @@ public class CatEntity extends TameableEntity {
 
     public void setCollarColor(IntEntityMetadata entityMetadata) {
         collarColor = (byte) entityMetadata.getPrimitiveValue();
-        updateCollarColor();
-    }
-
-    private void updateCollarColor() {
         // Needed or else wild cats are a red color
         if (getFlag(EntityFlag.TAMED)) {
             dirtyMetadata.put(EntityDataTypes.COLOR, collarColor);
@@ -111,13 +108,13 @@ public class CatEntity extends TameableEntity {
     }
 
     @Override
-    protected @Nullable Tag<Item> getFoodTag() {
-        return ItemTag.CAT_FOOD;
+    public boolean canEat(Item item) {
+        return item == Items.COD || item == Items.SALMON;
     }
 
-    @NonNull
+    @Nonnull
     @Override
-    protected InteractiveTag testMobInteraction(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractiveTag testMobInteraction(@Nonnull Hand hand, @Nonnull GeyserItemStack itemInHand) {
         boolean tamed = getFlag(EntityFlag.TAMED);
         if (tamed && ownerBedrockId == session.getPlayerEntity().getGeyserId()) {
             // Toggle sitting
@@ -127,9 +124,9 @@ public class CatEntity extends TameableEntity {
         }
     }
 
-    @NonNull
+    @Nonnull
     @Override
-    protected InteractionResult mobInteract(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractionResult mobInteract(@Nonnull Hand hand, @Nonnull GeyserItemStack itemInHand) {
         boolean tamed = getFlag(EntityFlag.TAMED);
         if (tamed && ownerBedrockId == session.getPlayerEntity().getGeyserId()) {
             return InteractionResult.SUCCESS;

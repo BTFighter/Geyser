@@ -25,8 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.animal.horse;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
+import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
 import org.cloudburstmc.math.vector.Vector3f;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityEventType;
@@ -41,16 +41,20 @@ import org.geysermc.geyser.inventory.GeyserItemStack;
 import org.geysermc.geyser.item.Items;
 import org.geysermc.geyser.item.type.Item;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.geyser.session.cache.tags.ItemTag;
-import org.geysermc.geyser.session.cache.tags.Tag;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
 
+import javax.annotation.Nonnull;
+import java.util.Set;
 import java.util.UUID;
 
 public class AbstractHorseEntity extends AnimalEntity {
+    /**
+     * A list of all foods a horse/donkey can eat on Java Edition.
+     * Used to display interactive tag if needed.
+     */
+    private static final Set<Item> DONKEY_AND_HORSE_FOODS = Set.of(Items.GOLDEN_APPLE, Items.ENCHANTED_GOLDEN_APPLE,
+            Items.GOLDEN_CARROT, Items.SUGAR, Items.APPLE, Items.WHEAT, Items.HAY_BLOCK);
 
     public AbstractHorseEntity(GeyserSession session, int entityId, long geyserId, UUID uuid, EntityDefinition<?> definition, Vector3f position, Vector3f motion, float yaw, float pitch, float headYaw) {
         super(session, entityId, geyserId, uuid, definition, position, motion, yaw, pitch, headYaw);
@@ -120,19 +124,18 @@ public class AbstractHorseEntity extends AnimalEntity {
     }
 
     @Override
-    @Nullable
-    protected Tag<Item> getFoodTag() {
-        return ItemTag.HORSE_FOOD;
+    public boolean canEat(Item item) {
+        return DONKEY_AND_HORSE_FOODS.contains(item);
     }
 
-    @NonNull
+    @Nonnull
     @Override
-    protected InteractiveTag testMobInteraction(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractiveTag testMobInteraction(@Nonnull Hand hand, @Nonnull GeyserItemStack itemInHand) {
         return testHorseInteraction(hand, itemInHand);
     }
 
-    @NonNull
-    protected final InteractiveTag testHorseInteraction(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    @Nonnull
+    protected final InteractiveTag testHorseInteraction(@Nonnull Hand hand, @Nonnull GeyserItemStack itemInHand) {
         boolean isBaby = isBaby();
         if (!isBaby) {
             if (getFlag(EntityFlag.TAMED) && session.isSneaking()) {
@@ -175,14 +178,14 @@ public class AbstractHorseEntity extends AnimalEntity {
         }
     }
 
-    @NonNull
+    @Nonnull
     @Override
-    protected InteractionResult mobInteract(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractionResult mobInteract(Hand hand, @Nonnull GeyserItemStack itemInHand) {
         return mobHorseInteract(hand, itemInHand);
     }
 
-    @NonNull
-    protected final InteractionResult mobHorseInteract(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    @Nonnull
+    protected final InteractionResult mobHorseInteract(@Nonnull Hand hand, @Nonnull GeyserItemStack itemInHand) {
         boolean isBaby = isBaby();
         if (!isBaby) {
             if (getFlag(EntityFlag.TAMED) && session.isSneaking()) {
@@ -233,21 +236,21 @@ public class AbstractHorseEntity extends AnimalEntity {
         }
     }
 
-    protected boolean testSaddle(@NonNull GeyserItemStack itemInHand) {
+    protected boolean testSaddle(@Nonnull GeyserItemStack itemInHand) {
         return isAlive() && !getFlag(EntityFlag.BABY) && getFlag(EntityFlag.TAMED);
     }
 
-    protected boolean testForChest(@NonNull GeyserItemStack itemInHand) {
+    protected boolean testForChest(@Nonnull GeyserItemStack itemInHand) {
         return false;
     }
 
-    protected boolean additionalTestForInventoryOpen(@NonNull GeyserItemStack itemInHand) {
+    protected boolean additionalTestForInventoryOpen(@Nonnull GeyserItemStack itemInHand) {
         return itemInHand.asItem().javaIdentifier().endsWith("_horse_armor");
     }
 
     /* Just a place to stuff common code for the undead variants without having duplicate code */
 
-    protected final InteractiveTag testUndeadHorseInteraction(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected final InteractiveTag testUndeadHorseInteraction(@Nonnull Hand hand, @Nonnull GeyserItemStack itemInHand) {
         if (!getFlag(EntityFlag.TAMED)) {
             return InteractiveTag.NONE;
         } else if (isBaby()) {
@@ -269,7 +272,7 @@ public class AbstractHorseEntity extends AnimalEntity {
         }
     }
 
-    protected final InteractionResult undeadHorseInteract(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected final InteractionResult undeadHorseInteract(@Nonnull Hand hand, @Nonnull GeyserItemStack itemInHand) {
         if (!getFlag(EntityFlag.TAMED)) {
             return InteractionResult.PASS;
         } else if (isBaby()) {

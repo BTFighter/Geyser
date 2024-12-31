@@ -35,16 +35,14 @@ import net.md_5.bungee.api.connection.PendingConnection;
 import net.md_5.bungee.api.event.ProxyPingEvent;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.protocol.ProtocolConstants;
-import org.checkerframework.checker.nullness.qual.Nullable;
-import org.geysermc.geyser.GeyserImpl;
 import org.geysermc.geyser.ping.GeyserPingInfo;
 import org.geysermc.geyser.ping.IGeyserPingPassthrough;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 @AllArgsConstructor
 public class GeyserBungeePingPassthrough implements IGeyserPingPassthrough, Listener {
@@ -61,23 +59,18 @@ public class GeyserBungeePingPassthrough implements IGeyserPingPassthrough, List
                 future.complete(event);
             }
         }));
-
-        ProxyPingEvent event;
-
-        try {
-            event = future.get(100, TimeUnit.MILLISECONDS);
-        } catch (Throwable cause) {
-            String address = GeyserImpl.getInstance().getConfig().isLogPlayerIpAddresses() ? inetSocketAddress.toString() : "<IP address withheld>";
-            GeyserImpl.getInstance().getLogger().error("Failed to get ping information for " + address, cause);
-            return null;
-        }
-
+        ProxyPingEvent event = future.join();
         ServerPing response = event.getResponse();
-        return new GeyserPingInfo(
+        GeyserPingInfo geyserPingInfo = new GeyserPingInfo(
                 response.getDescriptionComponent().toLegacyText(),
-                response.getPlayers().getMax(),
-                response.getPlayers().getOnline()
+                new GeyserPingInfo.Players(response.getPlayers().getMax(), response.getPlayers().getOnline()),
+                new GeyserPingInfo.Version(response.getVersion().getName(), response.getVersion().getProtocol())
         );
+        if (event.getResponse().getPlayers().getSample() != null) {
+            Arrays.stream(event.getResponse().getPlayers().getSample()).forEach(proxiedPlayer ->
+                    geyserPingInfo.getPlayerList().add(proxiedPlayer.getName()));
+        }
+        return geyserPingInfo;
     }
 
     // This is static so pending connection can use it
@@ -117,7 +110,7 @@ public class GeyserBungeePingPassthrough implements IGeyserPingPassthrough, List
         }
 
         @Override
-        public @Nullable InetSocketAddress getVirtualHost() {
+        public InetSocketAddress getVirtualHost() {
             return null;
         }
 

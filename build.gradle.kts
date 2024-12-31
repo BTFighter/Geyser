@@ -1,21 +1,26 @@
 plugins {
-    // Ensure AP works in eclipse (no effect on other IDEs)
-<<<<<<< HEAD
-    `eclipse`
+    `java-library`
     id("geyser.build-logic")
     id("io.freefair.lombok") version "6.3.0" apply false
 }
 
+allprojects {
+    group = "org.geysermc.geyser"
+    version = "2.1.1-SNAPSHOT"
+    description = "Allows for players from Minecraft: Bedrock Edition to join Minecraft: Java Edition servers."
 
-
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(16))
+    tasks.withType<JavaCompile> {
+        options.encoding = "UTF-8"
     }
 }
 
 val platforms = setOf(
-    projects.standalone
+    projects.fabric,
+    projects.bungeecord,
+    projects.spigot,
+    projects.sponge,
+    projects.standalone,
+    projects.velocity
 ).map { it.dependencyProject }
 
 subprojects {
@@ -29,8 +34,4 @@ subprojects {
         in platforms -> plugins.apply("geyser.platform-conventions")
         else -> plugins.apply("geyser.base-conventions")
     }
-=======
-    eclipse
-    id("geyser.base-conventions")
->>>>>>> parent of 5255b844e (Upload old version)
 }

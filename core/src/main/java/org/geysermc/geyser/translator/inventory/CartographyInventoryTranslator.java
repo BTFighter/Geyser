@@ -25,18 +25,17 @@
 
 package org.geysermc.geyser.translator.inventory;
 
+import com.github.steveice10.mc.protocol.data.game.inventory.ContainerType;
 import org.cloudburstmc.protocol.bedrock.data.inventory.ContainerSlotType;
 import org.cloudburstmc.protocol.bedrock.data.inventory.itemstack.request.ItemStackRequestSlotData;
 import org.geysermc.geyser.inventory.*;
 import org.geysermc.geyser.inventory.updater.UIInventoryUpdater;
 import org.geysermc.geyser.item.Items;
-import org.geysermc.geyser.level.block.Blocks;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerType;
 
 public class CartographyInventoryTranslator extends AbstractBlockInventoryTranslator {
     public CartographyInventoryTranslator() {
-        super(3, Blocks.CARTOGRAPHY_TABLE, org.cloudburstmc.protocol.bedrock.data.inventory.ContainerType.CARTOGRAPHY, UIInventoryUpdater.INSTANCE);
+        super(3, "minecraft:cartography_table", org.cloudburstmc.protocol.bedrock.data.inventory.ContainerType.CARTOGRAPHY, UIInventoryUpdater.INSTANCE);
     }
 
     @Override
@@ -56,7 +55,7 @@ public class CartographyInventoryTranslator extends AbstractBlockInventoryTransl
 
     @Override
     public int bedrockSlotToJava(ItemStackRequestSlotData slotInfoData) {
-        return switch (slotInfoData.getContainerName().getContainer()) {
+        return switch (slotInfoData.getContainer()) {
             case CARTOGRAPHY_INPUT -> 0;
             case CARTOGRAPHY_ADDITIONAL -> 1;
             case CARTOGRAPHY_RESULT, CREATED_OUTPUT -> 2;

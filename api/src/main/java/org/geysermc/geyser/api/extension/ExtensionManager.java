@@ -36,13 +36,13 @@ import java.util.Collection;
 public abstract class ExtensionManager {
 
     /**
-     * Gets an extension by the given ID.
+     * Gets an extension with the given name.
      *
-     * @param id the ID of the extension
-     * @return an extension with the given ID
+     * @param name the name of the extension
+     * @return an extension with the given name
      */
     @Nullable
-    public abstract Extension extension(@NonNull String id);
+    public abstract Extension extension(@NonNull String name);
 
     /**
      * Enables the given {@link Extension}.

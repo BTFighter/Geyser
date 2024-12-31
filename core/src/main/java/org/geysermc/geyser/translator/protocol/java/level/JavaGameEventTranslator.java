@@ -25,15 +25,17 @@
 
 package org.geysermc.geyser.translator.protocol.java.level;
 
-import org.geysermc.mcprotocollib.protocol.data.game.ClientCommand;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.GameMode;
-import org.geysermc.mcprotocollib.protocol.data.game.level.notify.EnterCreditsValue;
-import org.geysermc.mcprotocollib.protocol.data.game.level.notify.RainStrengthValue;
-import org.geysermc.mcprotocollib.protocol.data.game.level.notify.RespawnScreenValue;
-import org.geysermc.mcprotocollib.protocol.data.game.level.notify.ThunderStrengthValue;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundGameEventPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.ServerboundClientCommandPacket;
+import com.github.steveice10.mc.protocol.data.game.ClientCommand;
+import com.github.steveice10.mc.protocol.data.game.entity.player.GameMode;
+import com.github.steveice10.mc.protocol.data.game.level.notify.EnterCreditsValue;
+import com.github.steveice10.mc.protocol.data.game.level.notify.RainStrengthValue;
+import com.github.steveice10.mc.protocol.data.game.level.notify.RespawnScreenValue;
+import com.github.steveice10.mc.protocol.data.game.level.notify.ThunderStrengthValue;
+import com.github.steveice10.mc.protocol.packet.ingame.clientbound.level.ClientboundGameEventPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.serverbound.ServerboundClientCommandPacket;
+import org.cloudburstmc.math.vector.Vector3f;
 import org.cloudburstmc.protocol.bedrock.data.GameRuleData;
+import org.cloudburstmc.protocol.bedrock.data.LevelEvent;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityEventType;
 import org.cloudburstmc.protocol.bedrock.packet.*;
 import org.geysermc.geyser.entity.type.player.PlayerEntity;
@@ -42,10 +44,12 @@ import org.geysermc.geyser.text.MinecraftLocale;
 import org.geysermc.geyser.translator.inventory.PlayerInventoryTranslator;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.geyser.util.EntityUtils;
 
 @Translator(packet = ClientboundGameEventPacket.class)
 public class JavaGameEventTranslator extends PacketTranslator<ClientboundGameEventPacket> {
+    // Strength of rainstorms and thunderstorms is a 0-1 float on Java, while on Bedrock it is a 0-65535 int
+    private static final int MAX_STORM_STRENGTH = 65535;
+
     @Override
     public void translate(GeyserSession session, ClientboundGameEventPacket packet) {
         PlayerEntity entity = session.getPlayerEntity();
@@ -60,26 +64,48 @@ public class JavaGameEventTranslator extends PacketTranslator<ClientboundGameEve
             // As a result many developers use these packets for the opposite of what their names implies
             // Behavior last verified with Java 1.19.4 and Bedrock 1.19.71
             case START_RAIN:
-                session.updateRain(0);
+                LevelEventPacket stopRainPacket = new LevelEventPacket();
+                stopRainPacket.setType(LevelEvent.STOP_RAINING);
+                stopRainPacket.setData(0);
+                stopRainPacket.setPosition(Vector3f.ZERO);
+                session.sendUpstreamPacket(stopRainPacket);
+                session.setRaining(false);
                 break;
             case STOP_RAIN:
-                session.updateRain(1);
+                LevelEventPacket startRainPacket = new LevelEventPacket();
+                startRainPacket.setType(LevelEvent.START_RAINING);
+                startRainPacket.setData(MAX_STORM_STRENGTH);
+                startRainPacket.setPosition(Vector3f.ZERO);
+                session.sendUpstreamPacket(startRainPacket);
+                session.setRaining(true);
                 break;
             case RAIN_STRENGTH:
-                // This is the rain strength on LevelEventType.START_RAINING, but can be any value on LevelEventType.STOP_RAINING
                 float rainStrength = ((RainStrengthValue) packet.getValue()).getStrength();
-                session.updateRain(rainStrength);
+                boolean isCurrentlyRaining = rainStrength > 0f;
+                LevelEventPacket changeRainPacket = new LevelEventPacket();
+                changeRainPacket.setType(isCurrentlyRaining ? LevelEvent.START_RAINING : LevelEvent.STOP_RAINING);
+                // This is the rain strength on LevelEventType.START_RAINING, but can be any value on LevelEventType.STOP_RAINING
+                changeRainPacket.setData((int) (rainStrength * MAX_STORM_STRENGTH));
+                changeRainPacket.setPosition(Vector3f.ZERO);
+                session.sendUpstreamPacket(changeRainPacket);
+                session.setRaining(isCurrentlyRaining);
                 break;
             case THUNDER_STRENGTH:
                 // See above, same process
                 float thunderStrength = ((ThunderStrengthValue) packet.getValue()).getStrength();
-                session.updateThunder(thunderStrength);
+                boolean isCurrentlyThundering = thunderStrength > 0f;
+                LevelEventPacket changeThunderPacket = new LevelEventPacket();
+                changeThunderPacket.setType(isCurrentlyThundering ? LevelEvent.START_THUNDERSTORM : LevelEvent.STOP_THUNDERSTORM);
+                changeThunderPacket.setData((int) (thunderStrength * MAX_STORM_STRENGTH));
+                changeThunderPacket.setPosition(Vector3f.ZERO);
+                session.sendUpstreamPacket(changeThunderPacket);
+                session.setThunder(isCurrentlyThundering);
                 break;
             case CHANGE_GAMEMODE:
                 GameMode gameMode = (GameMode) packet.getValue();
 
                 SetPlayerGameTypePacket playerGameTypePacket = new SetPlayerGameTypePacket();
-                playerGameTypePacket.setGamemode(EntityUtils.toBedrockGamemode(gameMode).ordinal());
+                playerGameTypePacket.setGamemode(gameMode.ordinal());
                 session.sendUpstreamPacket(playerGameTypePacket);
                 session.setGameMode(gameMode);
 
@@ -104,7 +130,7 @@ public class JavaGameEventTranslator extends PacketTranslator<ClientboundGameEve
                 switch ((EnterCreditsValue) packet.getValue()) {
                     case SEEN_BEFORE -> {
                         ServerboundClientCommandPacket javaRespawnPacket = new ServerboundClientCommandPacket(ClientCommand.RESPAWN);
-                        session.sendDownstreamGamePacket(javaRespawnPacket);
+                        session.sendDownstreamPacket(javaRespawnPacket);
                     }
                     case FIRST_TIME -> {
                         ShowCreditsPacket showCreditsPacket = new ShowCreditsPacket();
@@ -115,8 +141,6 @@ public class JavaGameEventTranslator extends PacketTranslator<ClientboundGameEve
                 }
                 break;
             case AFFECTED_BY_ELDER_GUARDIAN:
-                // note: There is a ElderGuardianEffectValue that determines if a sound should be made or not,
-                // but that doesn't seem to be controllable on Bedrock Edition
                 EntityEventPacket eventPacket = new EntityEventPacket();
                 eventPacket.setType(EntityEventType.ELDER_GUARDIAN_CURSE);
                 eventPacket.setData(0);
@@ -143,9 +167,6 @@ public class JavaGameEventTranslator extends PacketTranslator<ClientboundGameEve
                 session.sendUpstreamPacket(arrowSoundPacket);
                 break;
             default:
-                // DEMO_MESSAGE             - for JE game demo
-                // LEVEL_CHUNKS_LOAD_START  - ???
-                // PUFFERFISH_STING_SOUND   - doesn't exist on bedrock
                 break;
         }
     }

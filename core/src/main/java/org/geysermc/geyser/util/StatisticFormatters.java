@@ -25,7 +25,7 @@
 
 package org.geysermc.geyser.util;
 
-import org.geysermc.mcprotocollib.protocol.data.game.statistic.StatisticFormat;
+import com.github.steveice10.mc.protocol.data.game.statistic.StatisticFormat;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;

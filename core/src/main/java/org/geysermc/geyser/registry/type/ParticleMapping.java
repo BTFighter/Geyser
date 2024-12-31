@@ -25,8 +25,10 @@
 
 package org.geysermc.geyser.registry.type;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.cloudburstmc.protocol.bedrock.data.LevelEventType;
 
-public record ParticleMapping(@Nullable LevelEventType levelEventType, @Nullable String identifier) {
+import javax.annotation.ParametersAreNullableByDefault;
+
+@ParametersAreNullableByDefault
+public record ParticleMapping(LevelEventType levelEventType, String identifier) {
 }

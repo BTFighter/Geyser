@@ -25,18 +25,15 @@
 
 package org.geysermc.geyser.item.type;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.ItemStack;
+import com.github.steveice10.opennbt.tag.builtin.StringTag;
+import com.github.steveice10.opennbt.tag.builtin.Tag;
 import org.cloudburstmc.protocol.bedrock.data.inventory.ItemData;
 import org.geysermc.geyser.GeyserImpl;
-import org.geysermc.geyser.inventory.item.Potion;
+import org.geysermc.geyser.inventory.item.TippedArrowPotion;
 import org.geysermc.geyser.registry.type.ItemMapping;
 import org.geysermc.geyser.registry.type.ItemMappings;
-import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.geyser.translator.item.BedrockItemBuilder;
-import org.geysermc.geyser.translator.item.ItemTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentType;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.PotionContents;
+import org.geysermc.geyser.translator.inventory.item.ItemTranslator;
 
 public class TippedArrowItem extends ArrowItem {
     public TippedArrowItem(String javaIdentifier, Builder builder) {
@@ -44,31 +41,19 @@ public class TippedArrowItem extends ArrowItem {
     }
 
     @Override
-    public ItemData.Builder translateToBedrock(GeyserSession session, int count, DataComponents components, ItemMapping mapping, ItemMappings mappings) {
-        if (components != null) {
-            PotionContents potionContents = components.get(DataComponentType.POTION_CONTENTS);
-            if (potionContents != null) {
-                Potion potion = Potion.getByJavaId(potionContents.getPotionId());
-                if (potion != null) {
-                    return ItemData.builder()
-                            .definition(mapping.getBedrockDefinition())
-                            .damage(potion.tippedArrowId())
-                            .count(count);
-                }
-                GeyserImpl.getInstance().getLogger().debug("Unknown Java potion (tipped arrow): " + potionContents.getPotionId());
+    public ItemData.Builder translateToBedrock(ItemStack itemStack, ItemMapping mapping, ItemMappings mappings) {
+        Tag potionTag = itemStack.getNbt().get("Potion");
+        if (potionTag instanceof StringTag) {
+            TippedArrowPotion tippedArrowPotion = TippedArrowPotion.getByJavaIdentifier(((StringTag) potionTag).getValue());
+            if (tippedArrowPotion != null) {
+                return ItemData.builder()
+                        .definition(mapping.getBedrockDefinition())
+                        .damage(tippedArrowPotion.getBedrockId())
+                        .count(itemStack.getAmount())
+                        .tag(ItemTranslator.translateNbtToBedrock(itemStack.getNbt()));
             }
+            GeyserImpl.getInstance().getLogger().debug("Unknown Java potion (tipped arrow): " + potionTag.getValue());
         }
-        return super.translateToBedrock(session, count, components, mapping, mappings);
-    }
-
-    @Override
-    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull DataComponents components, @NonNull BedrockItemBuilder builder) {
-        // Make custom effect information visible
-        PotionContents potionContents = components.get(DataComponentType.POTION_CONTENTS);
-        if (potionContents != null) {
-            ItemTranslator.addPotionEffectLore(potionContents, builder, session.locale());
-        }
-
-        super.translateComponentsToBedrock(session, components, builder);
+        return super.translateToBedrock(itemStack, mapping, mappings);
     }
 }

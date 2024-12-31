@@ -25,37 +25,34 @@
 
 package org.geysermc.geyser.ping;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Data;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
-/**
- * The structure of this class and its nested classes are specifically
- * designed for the format received by {@link GeyserLegacyPingPassthrough}.
- */
+import java.util.ArrayList;
+import java.util.Collection;
+
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class GeyserPingInfo {
 
-    @Nullable
     private String description;
 
     private Players players;
+    private Version version;
+
+    @JsonIgnore
+    private Collection<String> playerList = new ArrayList<>();
 
     public GeyserPingInfo() {
-        // for json mapping
     }
 
-    public GeyserPingInfo(@Nullable String description, Players players) {
+    public GeyserPingInfo(String description, Players players, Version version) {
         this.description = description;
         this.players = players;
-    }
-
-    public GeyserPingInfo(@Nullable String description, int maxPlayers, int onlinePlayers) {
-        this.description = description;
-        this.players = new Players(maxPlayers, onlinePlayers);
+        this.version = version;
     }
 
     @JsonSetter("description")
@@ -71,12 +68,26 @@ public class GeyserPingInfo {
         private int online;
 
         public Players() {
-            // for json mapping
         }
 
         public Players(int max, int online) {
             this.max = max;
             this.online = online;
+        }
+    }
+
+    @Data
+    public static class Version {
+
+        private String name;
+        private int protocol;
+
+        public Version() {
+        }
+
+        public Version(String name, int protocol) {
+            this.name = name;
+            this.protocol = protocol;
         }
     }
 }

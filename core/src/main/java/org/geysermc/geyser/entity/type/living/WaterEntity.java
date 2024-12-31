@@ -38,7 +38,7 @@ public class WaterEntity extends CreatureEntity {
     }
 
     @Override
-    public boolean canBeLeashed() {
+    protected boolean canBeLeashed() {
         return false;
     }
 }
